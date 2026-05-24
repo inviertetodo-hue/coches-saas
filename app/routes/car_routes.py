@@ -3,8 +3,11 @@ from sqlalchemy.orm import Session
 from sqlalchemy import or_
 
 from app.database.deps import get_db
+
 from app.models.car import Car
 from app.models.car_schema import CarCreate
+from app.models.import_log import ImportLog
+
 from app.services.car_analyzer import analyze_car_deal
 from app.services.scraper_service import fake_mobile_de_scraper
 
@@ -14,8 +17,15 @@ router = APIRouter(
 )
 
 
+# -------------------------
+# CREAR COCHE
+# -------------------------
+
 @router.post("/")
-def create_car(car: CarCreate, db: Session = Depends(get_db)):
+def create_car(
+    car: CarCreate,
+    db: Session = Depends(get_db)
+):
 
     db_car = Car(
         brand=car.brand,
@@ -32,18 +42,31 @@ def create_car(car: CarCreate, db: Session = Depends(get_db)):
     return db_car
 
 
+# -------------------------
+# LISTAR COCHES
+# -------------------------
+
 @router.get("/")
-def list_cars(db: Session = Depends(get_db)):
+def list_cars(
+    db: Session = Depends(get_db)
+):
 
     return db.query(Car).all()
 
 
+# -------------------------
+# IMPORT MOBILE
+# -------------------------
+
 @router.post("/import-mobile")
-def import_mobile_cars(db: Session = Depends(get_db)):
+def import_mobile_cars(
+    db: Session = Depends(get_db)
+):
 
     scraped_cars = fake_mobile_de_scraper()
 
     imported = []
+
     skipped_duplicates = 0
 
     for car in scraped_cars:
@@ -74,6 +97,19 @@ def import_mobile_cars(db: Session = Depends(get_db)):
 
         imported.append(db_car)
 
+    # -------------------------
+    # GUARDAR LOG
+    # -------------------------
+
+    log = ImportLog(
+        source="mobile.de",
+        imported_count=len(imported),
+        duplicates_skipped=skipped_duplicates
+    )
+
+    db.add(log)
+    db.commit()
+
     return {
         "imported_count": len(imported),
         "duplicates_skipped": skipped_duplicates,
@@ -81,8 +117,28 @@ def import_mobile_cars(db: Session = Depends(get_db)):
     }
 
 
+# -------------------------
+# VER LOGS IMPORTACION
+# -------------------------
+
+@router.get("/import-logs")
+def get_import_logs(
+    db: Session = Depends(get_db)
+):
+
+    logs = db.query(ImportLog).all()
+
+    return logs
+
+
+# -------------------------
+# STATS
+# -------------------------
+
 @router.get("/stats")
-def get_stats(db: Session = Depends(get_db)):
+def get_stats(
+    db: Session = Depends(get_db)
+):
 
     cars = db.query(Car).all()
 
@@ -132,6 +188,10 @@ total_cars,
         "total_with_risk": total_risk
     }
 
+
+# -------------------------
+# DEALS
+# -------------------------
 
 @router.get("/deals")
 def get_deals(

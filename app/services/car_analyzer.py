@@ -28,14 +28,25 @@ def score_deal(margin, price):
     return round(score, 2)
 
 
+def get_deal_label(score):
+    if score >= 25:
+        return "CHOLLO"
+    if score >= 15:
+        return "BUENO"
+    if score >= 5:
+        return "NORMAL"
+    return "RIESGO"
+
+
 def is_good_deal(score):
-    return score >= 10
+    return score >= 15
 
 
 def analyze_car_deal(car):
     market_price = estimate_market_price(car)
     margin = calculate_margin(car, market_price)
     score = score_deal(margin, car.price)
+    label = get_deal_label(score)
 
     return {
         "id": car.id,
@@ -47,6 +58,7 @@ def analyze_car_deal(car):
         "estimated_market_price": round(market_price, 2),
         "margin": round(margin, 2),
         "score": score,
+        "label": label,
         "good_deal": is_good_deal(score)
     }
 

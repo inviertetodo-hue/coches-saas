@@ -3,14 +3,14 @@ import { useEffect, useState } from "react";
 const API_URL = "http://127.0.0.1:8000";
 
 function App() {
-  const [dashboard, setDashboard] = useState(null);
+  const [dashboard, setDashboard] =
+    useState(null);
 
-  const [favorites, setFavorites] = useState([]);
+  const [favorites, setFavorites] =
+    useState([]);
 
-  const [search, setSearch] = useState("");
-
-  const [sortBy, setSortBy] =
-    useState("score");
+  const [search, setSearch] =
+    useState("");
 
   useEffect(() => {
     loadDashboard();
@@ -75,25 +75,6 @@ function App() {
     );
   });
 
-  cars = [...cars].sort((a, b) => {
-    if (sortBy === "score") {
-      return b.score - a.score;
-    }
-
-    if (sortBy === "profit") {
-      return (
-        b.estimated_net_profit -
-        a.estimated_net_profit
-      );
-    }
-
-    if (sortBy === "price") {
-      return b.price - a.price;
-    }
-
-    return 0;
-  });
-
   const totalProfit =
     cars.reduce(
       (acc, car) =>
@@ -122,18 +103,6 @@ function App() {
         <button
           style={sidebarButtonStyle}
         >
-          🔥 Hot Deals
-        </button>
-
-        <button
-          style={sidebarButtonStyle}
-        >
-          ⭐ Premium
-        </button>
-
-        <button
-          style={sidebarButtonStyle}
-        >
           ❤️ Favoritos (
           {favorites.length})
         </button>
@@ -149,40 +118,16 @@ function App() {
           para compra y reventa
         </p>
 
-        <div style={controlsStyle}>
-          <input
-            placeholder="Buscar BMW, Audi..."
-            value={search}
-            onChange={(e) =>
-              setSearch(
-                e.target.value
-              )
-            }
-            style={searchStyle}
-          />
-
-          <select
-            value={sortBy}
-            onChange={(e) =>
-              setSortBy(
-                e.target.value
-              )
-            }
-            style={selectStyle}
-          >
-            <option value="score">
-              Mejor score
-            </option>
-
-            <option value="profit">
-              Mayor beneficio
-            </option>
-
-            <option value="price">
-              Precio más alto
-            </option>
-          </select>
-        </div>
+        <input
+          placeholder="Buscar BMW, Audi..."
+          value={search}
+          onChange={(e) =>
+            setSearch(
+              e.target.value
+            )
+          }
+          style={searchStyle}
+        />
 
         <div style={statsGridStyle}>
           <div style={glassCardStyle}>
@@ -247,8 +192,6 @@ function App() {
                   border:
                     favorite
                       ? "2px solid red"
-                      : car.is_hot_deal
-                      ? "2px solid gold"
                       : "1px solid rgba(255,255,255,0.08)",
                 }}
               >
@@ -257,32 +200,6 @@ function App() {
                   alt={car.brand}
                   style={imageStyle}
                 />
-
-                <div
-                  style={
-                    badgeRowStyle
-                  }
-                >
-                  {car.is_hot_deal && (
-                    <span
-                      style={
-                        hotBadgeStyle
-                      }
-                    >
-                      🔥 HOT
-                    </span>
-                  )}
-
-                  {car.is_premium_brand && (
-                    <span
-                      style={
-                        premiumBadgeStyle
-                      }
-                    >
-                      ⭐ PREMIUM
-                    </span>
-                  )}
-                </div>
 
                 <h2>
                   {car.brand}{" "}
@@ -314,20 +231,6 @@ function App() {
                     }
                   >
                     <small>
-                      SCORE
-                    </small>
-
-                    <strong>
-                      {car.score}
-                    </strong>
-                  </div>
-
-                  <div
-                    style={
-                      miniCardStyle
-                    }
-                  >
-                    <small>
                       ROI
                     </small>
 
@@ -340,28 +243,6 @@ function App() {
                       }}
                     >
                       {roi}%
-                    </strong>
-                  </div>
-
-                  <div
-                    style={
-                      miniCardStyle
-                    }
-                  >
-                    <small>
-                      BENEFICIO
-                    </small>
-
-                    <strong
-                      style={{
-                        color:
-                          "#22c55e",
-                      }}
-                    >
-                      {
-                        car.estimated_net_profit
-                      }
-                      €
                     </strong>
                   </div>
                 </div>
@@ -416,9 +297,6 @@ const sidebarStyle = {
   width: "280px",
   background: "#0f172a",
   padding: "25px",
-  display: "flex",
-  flexDirection: "column",
-  gap: "15px",
 };
 
 const logoStyle = {
@@ -431,6 +309,7 @@ const subLogoStyle = {
 };
 
 const sidebarButtonStyle = {
+  width: "100%",
   padding: "16px",
   borderRadius: "16px",
   border: "none",
@@ -438,6 +317,7 @@ const sidebarButtonStyle = {
   color: "white",
   cursor: "pointer",
   fontSize: "16px",
+  marginBottom: "12px",
 };
 
 const contentStyle = {
@@ -451,31 +331,17 @@ const titleStyle = {
 
 const subtitleStyle = {
   color: "#94a3b8",
-  fontSize: "18px",
   marginBottom: "25px",
 };
 
-const controlsStyle = {
-  display: "flex",
-  gap: "15px",
-  marginBottom: "30px",
-};
-
 const searchStyle = {
-  flex: 1,
+  width: "100%",
   padding: "18px",
   borderRadius: "18px",
   border: "none",
   background: "#1e293b",
   color: "white",
-};
-
-const selectStyle = {
-  padding: "18px",
-  borderRadius: "18px",
-  border: "none",
-  background: "#1e293b",
-  color: "white",
+  marginBottom: "30px",
 };
 
 const statsGridStyle = {
@@ -512,28 +378,6 @@ const imageStyle = {
   objectFit: "cover",
   borderRadius: "18px",
   marginBottom: "15px",
-};
-
-const badgeRowStyle = {
-  display: "flex",
-  gap: "10px",
-  marginBottom: "14px",
-};
-
-const hotBadgeStyle = {
-  background: "gold",
-  color: "black",
-  padding: "8px 12px",
-  borderRadius: "10px",
-  fontWeight: "bold",
-};
-
-const premiumBadgeStyle = {
-  background: "#334155",
-  color: "white",
-  padding: "8px 12px",
-  borderRadius: "10px",
-  fontWeight: "bold",
 };
 
 const miniGridStyle = {
@@ -580,4 +424,3 @@ const loadingStyle = {
 };
 
 export default App;
-

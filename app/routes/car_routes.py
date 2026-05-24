@@ -55,6 +55,37 @@ def list_cars(
 
 
 # -------------------------
+# TOP DEALS
+# -------------------------
+
+@router.get("/top-deals")
+def get_top_deals(
+    limit: int = Query(default=5),
+    db: Session = Depends(get_db)
+):
+
+    cars = db.query(Car).all()
+
+    analyzed_cars = []
+
+    for car in cars:
+
+        analyzed = analyze_car_deal(car)
+
+        analyzed_cars.append(analyzed)
+
+    analyzed_cars.sort(
+        key=lambda x: x["score"],
+        reverse=True
+    )
+
+    return {
+        "total": len(analyzed_cars),
+        "top_deals": analyzed_cars[:limit]
+    }
+
+
+# -------------------------
 # IMPORT MOBILE
 # -------------------------
 
@@ -95,19 +126,10 @@ def import_mobile_cars(
 
         imported.append(db_car)
 
-    # -------------------------
-    # COMMIT MASIVO
-    # -------------------------
-
     db.commit()
 
-    # refrescar objetos
     for car in imported:
         db.refresh(car)
-
-    # -------------------------
-    # GUARDAR LOG
-    # -------------------------
 
     log = ImportLog(
         source="mobile.de",
@@ -180,7 +202,7 @@ total_cars,
 
         total_chollos = len([
             car for car in analyzed_cars
-            if car["label"] == "CHOLLO"
+            if "CHOLLO" in car["label"]
         ])
 
         total_risk = len([

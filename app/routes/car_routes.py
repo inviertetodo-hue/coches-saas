@@ -92,10 +92,18 @@ def import_mobile_cars(
         )
 
         db.add(db_car)
-        db.commit()
-        db.refresh(db_car)
 
         imported.append(db_car)
+
+    # -------------------------
+    # COMMIT MASIVO
+    # -------------------------
+
+    db.commit()
+
+    # refrescar objetos
+    for car in imported:
+        db.refresh(car)
 
     # -------------------------
     # GUARDAR LOG

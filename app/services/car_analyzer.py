@@ -1,7 +1,9 @@
 def estimate_market_price(car):
+
     base_price = car.price
 
     km_penalty = (car.km / 10000) * 300
+
     age_bonus = (car.year - 2015) * 500
 
     market_price = base_price - km_penalty + age_bonus
@@ -10,6 +12,7 @@ def estimate_market_price(car):
 
 
 def calculate_margin(car, market_price):
+
     return market_price - car.price
 
 
@@ -57,7 +60,31 @@ def get_buy_recommendation(score, margin):
     return "DESCARTAR"
 
 
+def detect_risk_flags(car, margin):
+
+    risks = []
+
+    # precio sospechosamente bajo
+    if car.price < 2000:
+        risks.append("PRECIO DEMASIADO BAJO")
+
+    # demasiados km
+    if car.km > 250000:
+        risks.append("KILOMETRAJE MUY ALTO")
+
+    # coche viejo
+    if car.year < 2010:
+        risks.append("COCHE ANTIGUO")
+
+    # margen negativo
+    if margin < 0:
+        risks.append("MARGEN NEGATIVO")
+
+    return risks
+
+
 def is_good_deal(score):
+
     return score >= 15
 
 
@@ -73,6 +100,8 @@ def analyze_car_deal(car):
 
     recommendation = get_buy_recommendation(score, margin)
 
+    risks = detect_risk_flags(car, margin)
+
     return {
         "id": car.id,
         "brand": car.brand,
@@ -85,6 +114,7 @@ def analyze_car_deal(car):
         "score": score,
         "label": label,
         "recommendation": recommendation,
-        "good_deal": is_good_deal(score)
+        "good_deal": is_good_deal(score),
+        "risk_flags": risks
     }
 

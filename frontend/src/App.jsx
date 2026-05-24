@@ -87,6 +87,12 @@ function App() {
                   : "1px solid #334155",
               }}
             >
+              <img
+                src={car.image_url}
+                alt={car.brand}
+                style={carImageStyle}
+              />
+
               <h2 style={{ fontSize: "28px" }}>
                 {car.brand} {car.model}
               </h2>
@@ -204,6 +210,14 @@ const dealCardStyle = {
   borderRadius: "20px",
   padding: "25px",
   boxShadow: "0 10px 25px rgba(0,0,0,0.3)",
+};
+
+const carImageStyle = {
+  width: "100%",
+  height: "220px",
+  objectFit: "cover",
+  borderRadius: "14px",
+  marginBottom: "20px",
 };
 
 const hotDealStyle = {

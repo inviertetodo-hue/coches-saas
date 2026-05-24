@@ -1,5 +1,4 @@
 def is_premium_brand(brand):
-
     premium_brands = [
         "BMW",
         "AUDI",
@@ -12,61 +11,55 @@ def is_premium_brand(brand):
     return brand.upper() in premium_brands
 
 
+def get_car_image(car):
+    brand = car.brand.upper()
+
+    if brand == "BMW":
+        return "https://images.unsplash.com/photo-1555215695-3004980ad54e"
+
+    if brand == "AUDI":
+        return "https://images.unsplash.com/photo-1606664515524-ed2f786a0bd6"
+
+    if brand == "MERCEDES":
+        return "https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8"
+
+    return "https://images.unsplash.com/photo-1492144534655-ae79c964c9d7"
+
+
 def estimate_market_price(car):
-
     base_price = car.price
-
     km_penalty = (car.km / 10000) * 300
-
     age_bonus = (car.year - 2015) * 500
-
     premium_bonus = 0
 
     if is_premium_brand(car.brand):
         premium_bonus = car.price * 0.08
 
-    market_price = (
-        base_price
-        - km_penalty
-        + age_bonus
-        + premium_bonus
-    )
+    market_price = base_price - km_penalty + age_bonus + premium_bonus
 
     return max(market_price, 1000)
 
 
 def calculate_margin(car, market_price):
-
     return market_price - car.price
 
 
 def estimate_expenses(car):
-
     transport_cost = 600
-
     transfer_cost = car.price * 0.04
-
     repair_buffer = 800
-
     dealer_margin_cost = car.price * 0.02
 
-    total_expenses = (
-        transport_cost +
-        transfer_cost +
-        repair_buffer +
-        dealer_margin_cost
-    )
+    total_expenses = transport_cost + transfer_cost + repair_buffer + dealer_margin_cost
 
     return round(total_expenses, 2)
 
 
 def estimate_net_profit(margin, expenses):
-
     return round(margin - expenses, 2)
 
 
 def score_deal(car, margin, price):
-
     if price <= 0:
         return 0
 
@@ -91,7 +84,6 @@ def score_deal(car, margin, price):
 
 
 def get_deal_label(score):
-
     if score >= 30:
         return "CHOLLO PREMIUM"
 
@@ -108,7 +100,6 @@ def get_deal_label(score):
 
 
 def get_buy_recommendation(score, net_profit):
-
     if score >= 30 and net_profit > 4000:
         return "COMPRAR YA"
 
@@ -122,7 +113,6 @@ def get_buy_recommendation(score, net_profit):
 
 
 def detect_risk_flags(car, margin):
-
     risks = []
 
     if car.price < 2000:
@@ -141,58 +131,26 @@ def detect_risk_flags(car, margin):
 
 
 def is_hot_deal(car, score, net_profit):
-
-    if (
-        is_premium_brand(car.brand)
-        and score >= 25
-        and net_profit >= 3000
-    ):
+    if is_premium_brand(car.brand) and score >= 25 and net_profit >= 3000:
         return True
 
     return False
 
 
 def is_good_deal(score):
-
     return score >= 15
 
 
 def analyze_car_deal(car):
-
     market_price = estimate_market_price(car)
-
     margin = calculate_margin(car, market_price)
-
     expenses = estimate_expenses(car)
-
-    net_profit = estimate_net_profit(
-        margin,
-        expenses
-    )
-
-    score = score_deal(
-        car,
-        margin,
-        car.price
-    )
-
+    net_profit = estimate_net_profit(margin, expenses)
+    score = score_deal(car, margin, car.price)
     label = get_deal_label(score)
-
-    recommendation = get_buy_recommendation(
-        score,
-        net_profit
-    )
-
-    risks = detect_risk_flags(
-        car,
-        margin
-    )
-
-    hot_deal = is_hot_deal(
-        car,
-        score,
-        net_profit
-    )
+    recommendation = get_buy_recommendation(score, net_profit)
+    risks = detect_risk_flags(car, margin)
+    hot_deal = is_hot_deal(car, score, net_profit)
 
     return {
         "id": car.id,
@@ -201,6 +159,7 @@ def analyze_car_deal(car):
         "year": car.year,
         "km": car.km,
         "price": car.price,
+        "image_url": get_car_image(car),
         "is_premium_brand": is_premium_brand(car.brand),
         "is_hot_deal": hot_deal,
         "estimated_market_price": round(market_price, 2),
@@ -213,4 +172,3 @@ def analyze_car_deal(car):
         "good_deal": is_good_deal(score),
         "risk_flags": risks
     }
-

@@ -6,6 +6,7 @@ from app.database.deps import get_db
 from app.models.car import Car
 from app.models.car_schema import CarCreate
 from app.services.car_analyzer import analyze_car_deal
+from app.services.scraper_service import fake_mobile_de_scraper
 
 router = APIRouter(
     prefix="/cars",
@@ -13,15 +14,8 @@ router = APIRouter(
 )
 
 
-# -------------------------
-# CREAR COCHE
-# -------------------------
-
 @router.post("/")
-def create_car(
-    car: CarCreate,
-    db: Session = Depends(get_db)
-):
+def create_car(car: CarCreate, db: Session = Depends(get_db)):
 
     db_car = Car(
         brand=car.brand,
@@ -38,35 +32,49 @@ def create_car(
     return db_car
 
 
-# -------------------------
-# LISTAR COCHES
-# -------------------------
-
 @router.get("/")
-def list_cars(
-    db: Session = Depends(get_db)
-):
+def list_cars(db: Session = Depends(get_db)):
 
     return db.query(Car).all()
 
 
-# -------------------------
-# ESTADISTICAS
-# -------------------------
+@router.post("/import-mobile")
+def import_mobile_cars(db: Session = Depends(get_db)):
+
+    scraped_cars = fake_mobile_de_scraper()
+
+    imported = []
+
+    for car in scraped_cars:
+
+        db_car = Car(
+            brand=car["brand"],
+            model=car["model"],
+            year=car["year"],
+            km=car["km"],
+            price=car["price"]
+        )
+
+        db.add(db_car)
+        db.commit()
+        db.refresh(db_car)
+
+        imported.append(db_car)
+
+    return {
+        "imported_count": len(imported),
+        "cars": imported
+    }
+
 
 @router.get("/stats")
-def get_stats(
-    db: Session = Depends(get_db)
-):
+def get_stats(db: Session = Depends(get_db)):
 
     cars = db.query(Car).all()
-
     analyzed_cars = []
 
     for car in cars:
-        analyzed_cars.append(
-            analyze_car_deal(car)
-        )
+        analyzed_cars.append(analyze_car_deal(car))
 
     total_cars = len(analyzed_cars)
 
@@ -76,28 +84,14 @@ def get_stats(
     total_risk = 0
 
     if total_cars > 0:
-
-        avg_price = round(
-            sum(car["price"] for car in analyzed_cars) / 
-total_cars,
-            2
-        )
-
-        avg_score = round(
-            sum(car["score"] for car in analyzed_cars) / 
-total_cars,
-            2
-        )
-
-        total_chollos = len([
-            car for car in analyzed_cars
-            if car["label"] == "CHOLLO"
-        ])
-
-        total_risk = len([
-            car for car in analyzed_cars
-            if len(car["risk_flags"]) > 0
-        ])
+        avg_price = round(sum(car["price"] for car in 
+analyzed_cars) / total_cars, 2)
+        avg_score = round(sum(car["score"] for car in 
+analyzed_cars) / total_cars, 2)
+        total_chollos = len([car for car in analyzed_cars if 
+car["label"] == "CHOLLO"])
+        total_risk = len([car for car in analyzed_cars if 
+len(car["risk_flags"]) > 0])
 
     return {
         "total_cars": total_cars,
@@ -108,51 +102,30 @@ total_cars,
     }
 
 
-# -------------------------
-# RANKING CHOLLOS
-# -------------------------
-
 @router.get("/deals")
 def get_deals(
-
     search: str | None = Query(default=None),
-
     brand: str | None = Query(default=None),
-
     min_price: float | None = Query(default=None),
-
     max_price: float | None = Query(default=None),
-
     min_year: int | None = Query(default=None),
-
     max_km: int | None = Query(default=None),
-
     only_good: bool = Query(default=False),
-
     sort_by: str = Query(default="score"),
-
     page: int = Query(default=1),
-
     limit: int = Query(default=10),
-
     db: Session = Depends(get_db)
 ):
 
     query = db.query(Car)
 
-    # SEARCH
-
     if search:
-
         query = query.filter(
-
             or_(
                 Car.brand.ilike(f"%{search}%"),
                 Car.model.ilike(f"%{search}%")
             )
         )
-
-    # FILTROS
 
     if brand:
         query = query.filter(Car.brand.ilike(f"%{brand}%"))
@@ -169,8 +142,6 @@ def get_deals(
     if max_km is not None:
         query = query.filter(Car.km <= max_km)
 
-    # PAGINACION
-
     offset = (page - 1) * limit
 
     cars = query.offset(offset).limit(limit).all()
@@ -186,33 +157,19 @@ def get_deals(
 
         analyzed_cars.append(analyzed)
 
-    # ORDENACION
-
     if sort_by == "score":
-
-        analyzed_cars.sort(
-            key=lambda x: x["score"],
-            reverse=True
-        )
+        analyzed_cars.sort(key=lambda x: x["score"], 
+reverse=True)
 
     elif sort_by == "price":
-
-        analyzed_cars.sort(
-            key=lambda x: x["price"]
-        )
+        analyzed_cars.sort(key=lambda x: x["price"])
 
     elif sort_by == "year":
-
-        analyzed_cars.sort(
-            key=lambda x: x["year"],
-            reverse=True
-        )
+        analyzed_cars.sort(key=lambda x: x["year"], 
+reverse=True)
 
     elif sort_by == "km":
-
-        analyzed_cars.sort(
-            key=lambda x: x["km"]
-        )
+        analyzed_cars.sort(key=lambda x: x["km"])
 
     return {
         "page": page,

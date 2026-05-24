@@ -1,3 +1,17 @@
+def is_premium_brand(brand):
+
+    premium_brands = [
+        "BMW",
+        "AUDI",
+        "MERCEDES",
+        "PORSCHE",
+        "LEXUS",
+        "VOLVO"
+    ]
+
+    return brand.upper() in premium_brands
+
+
 def estimate_market_price(car):
 
     base_price = car.price
@@ -6,7 +20,17 @@ def estimate_market_price(car):
 
     age_bonus = (car.year - 2015) * 500
 
-    market_price = base_price - km_penalty + age_bonus
+    premium_bonus = 0
+
+    if is_premium_brand(car.brand):
+        premium_bonus = car.price * 0.08
+
+    market_price = (
+        base_price
+        - km_penalty
+        + age_bonus
+        + premium_bonus
+    )
 
     return max(market_price, 1000)
 
@@ -122,7 +146,10 @@ def analyze_car_deal(car):
         expenses
     )
 
-    score = score_deal(margin, car.price)
+    score = score_deal(
+        margin,
+        car.price
+    )
 
     label = get_deal_label(score)
 
@@ -131,7 +158,10 @@ def analyze_car_deal(car):
         net_profit
     )
 
-    risks = detect_risk_flags(car, margin)
+    risks = detect_risk_flags(
+        car,
+        margin
+    )
 
     return {
         "id": car.id,
@@ -140,6 +170,7 @@ def analyze_car_deal(car):
         "year": car.year,
         "km": car.km,
         "price": car.price,
+        "is_premium_brand": is_premium_brand(car.brand),
         "estimated_market_price": round(market_price, 2),
         "gross_margin": round(margin, 2),
         "estimated_expenses": expenses,

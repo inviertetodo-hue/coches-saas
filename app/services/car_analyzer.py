@@ -14,6 +14,7 @@ def calculate_margin(car, market_price):
 
 
 def score_deal(margin, price):
+
     if price <= 0:
         return 0
 
@@ -29,13 +30,31 @@ def score_deal(margin, price):
 
 
 def get_deal_label(score):
+
     if score >= 25:
         return "CHOLLO"
+
     if score >= 15:
         return "BUENO"
+
     if score >= 5:
         return "NORMAL"
+
     return "RIESGO"
+
+
+def get_buy_recommendation(score, margin):
+
+    if score >= 25 and margin > 3000:
+        return "COMPRAR YA"
+
+    if score >= 15 and margin > 1500:
+        return "MUY INTERESANTE"
+
+    if score >= 5:
+        return "REVISAR"
+
+    return "DESCARTAR"
 
 
 def is_good_deal(score):
@@ -43,10 +62,16 @@ def is_good_deal(score):
 
 
 def analyze_car_deal(car):
+
     market_price = estimate_market_price(car)
+
     margin = calculate_margin(car, market_price)
+
     score = score_deal(margin, car.price)
+
     label = get_deal_label(score)
+
+    recommendation = get_buy_recommendation(score, margin)
 
     return {
         "id": car.id,
@@ -59,6 +84,7 @@ def analyze_car_deal(car):
         "margin": round(margin, 2),
         "score": score,
         "label": label,
+        "recommendation": recommendation,
         "good_deal": is_good_deal(score)
     }
 

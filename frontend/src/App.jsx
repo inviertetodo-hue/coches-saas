@@ -6,41 +6,18 @@ function App() {
   const [logged, setLogged] = useState(false);
   const [password, setPassword] = useState("");
   const [dashboard, setDashboard] = useState(null);
-
   const [favorites, setFavorites] = useState([]);
-
   const [search, setSearch] = useState("");
-
   const [filter, setFilter] = useState("ALL");
-
   const [sortBy, setSortBy] = useState("score");
-
-  const [loadingImport, setLoadingImport] =
-    useState(false);
-
-  const [showModal, setShowModal] =
-    useState(false);
-
-  const [newCar, setNewCar] =
-    useState({
-      brand: "",
-      model: "",
-      year: "",
-      km: "",
-      price: "",
-      image_url: "",
-    });
+  const [loadingImport, setLoadingImport] = useState(false);
 
   useEffect(() => {
-    if (
-      localStorage.getItem("logged") ===
-      "true"
-    ) {
+    if (localStorage.getItem("logged") === "true") {
       setLogged(true);
     }
 
-    const saved =
-      localStorage.getItem("favorites");
+    const saved = localStorage.getItem("favorites");
 
     if (saved) {
       setFavorites(JSON.parse(saved));
@@ -48,10 +25,7 @@ function App() {
   }, []);
 
   useEffect(() => {
-    localStorage.setItem(
-      "favorites",
-      JSON.stringify(favorites)
-    );
+    localStorage.setItem("favorites", JSON.stringify(favorites));
   }, [favorites]);
 
   useEffect(() => {
@@ -62,11 +36,7 @@ function App() {
 
   const login = () => {
     if (password === "admin123") {
-      localStorage.setItem(
-        "logged",
-        "true"
-      );
-
+      localStorage.setItem("logged", "true");
       setLogged(true);
     } else {
       alert("Password incorrecta");
@@ -75,60 +45,21 @@ function App() {
 
   const logout = () => {
     localStorage.removeItem("logged");
-
     setLogged(false);
-
-    setDashboard(null);
   };
 
   const loadDashboard = () => {
     fetch(`${API_URL}/cars/dashboard`)
       .then((res) => res.json())
-      .then((data) =>
-        setDashboard(data)
-      );
-  };
-
-  const createCar = async () => {
-    await fetch(`${API_URL}/cars/`, {
-      method: "POST",
-
-      headers: {
-        "Content-Type":
-          "application/json",
-      },
-
-      body: JSON.stringify({
-        ...newCar,
-        year: Number(newCar.year),
-        km: Number(newCar.km),
-        price: Number(newCar.price),
-      }),
-    });
-
-    setShowModal(false);
-
-    setNewCar({
-      brand: "",
-      model: "",
-      year: "",
-      km: "",
-      price: "",
-      image_url: "",
-    });
-
-    loadDashboard();
+      .then((data) => setDashboard(data));
   };
 
   const importMobile = async () => {
     setLoadingImport(true);
 
-    await fetch(
-      `${API_URL}/cars/import-mobile`,
-      {
-        method: "POST",
-      }
-    );
+    await fetch(`${API_URL}/cars/import-mobile`, {
+      method: "POST",
+    });
 
     loadDashboard();
 
@@ -136,28 +67,18 @@ function App() {
   };
 
   const deleteCar = async (id) => {
-    await fetch(
-      `${API_URL}/cars/${id}`,
-      {
-        method: "DELETE",
-      }
-    );
+    await fetch(`${API_URL}/cars/${id}`, {
+      method: "DELETE",
+    });
 
     loadDashboard();
   };
 
   const toggleFavorite = (id) => {
     if (favorites.includes(id)) {
-      setFavorites(
-        favorites.filter(
-          (fav) => fav !== id
-        )
-      );
+      setFavorites(favorites.filter((fav) => fav !== id));
     } else {
-      setFavorites([
-        ...favorites,
-        id,
-      ]);
+      setFavorites([...favorites, id]);
     }
   };
 
@@ -165,35 +86,22 @@ function App() {
     return (
       <div style={loginPageStyle}>
         <div style={loginCardStyle}>
-          <h1>
-            🚗 Auto Intelligence
-          </h1>
-
-          <p style={mutedStyle}>
-            Panel privado enterprise
-          </p>
+          <h1>🚗 Auto Intelligence</h1>
 
           <input
             type="password"
-            placeholder="Password admin"
+            placeholder="Password"
             value={password}
-            onChange={(e) =>
-              setPassword(
-                e.target.value
-              )
-            }
+            onChange={(e) => setPassword(e.target.value)}
             style={loginInputStyle}
           />
 
-          <button
-            onClick={login}
-            style={loginButtonStyle}
-          >
+          <button onClick={login} style={loginButtonStyle}>
             Entrar
           </button>
 
           <p style={mutedStyle}>
-            Password: admin123
+            admin123
           </p>
         </div>
       </div>
@@ -203,13 +111,12 @@ function App() {
   if (!dashboard) {
     return (
       <div style={loadingStyle}>
-        Cargando marketplace...
+        Cargando...
       </div>
     );
   }
 
-  let cars =
-    dashboard.top_deals || [];
+  let cars = dashboard.top_deals || [];
 
   cars = cars.filter((car) => {
     const text =
@@ -259,9 +166,6 @@ function App() {
         a.estimated_net_profit
       );
 
-    if (sortBy === "price")
-      return b.price - a.price;
-
     if (sortBy === "roi")
       return roiB - roiA;
 
@@ -276,16 +180,28 @@ function App() {
       0
     );
 
+  const avgROI =
+    cars.length > 0
+      ? Math.round(
+          cars.reduce(
+            (acc, car) =>
+              acc +
+              (car.estimated_net_profit /
+                car.price) *
+                100,
+            0
+          ) / cars.length
+        )
+      : 0;
+
+  const bestCar = cars[0];
+
   return (
     <div style={appStyle}>
       <aside style={sidebarStyle}>
         <h1 style={logoStyle}>
           🚗 Auto Intelligence
         </h1>
-
-        <p style={subLogoStyle}>
-          Enterprise Marketplace
-        </p>
 
         <button
           onClick={() =>
@@ -322,17 +238,7 @@ function App() {
           }
           style={sidebarButtonStyle}
         >
-          ❤️ Favoritos (
-          {favorites.length})
-        </button>
-
-        <button
-          onClick={() =>
-            setShowModal(true)
-          }
-          style={greenButtonStyle}
-        >
-          ➕ Crear coche
+          ❤️ Favoritos
         </button>
 
         <button
@@ -347,25 +253,22 @@ function App() {
         <div style={topBarStyle}>
           <div>
             <h1 style={titleStyle}>
-              Marketplace Dashboard
+              Analytics Dashboard
             </h1>
 
             <p style={subtitleStyle}>
-              Inteligencia profesional
-              para compra y reventa
+              Executive automotive AI
             </p>
           </div>
 
-          <div style={headerButtonsStyle}>
-            <button
-              onClick={importMobile}
-              style={importButtonStyle}
-            >
-              {loadingImport
-                ? "Importando..."
-                : "📥 Importar"}
-            </button>
-          </div>
+          <button
+            onClick={importMobile}
+            style={importButtonStyle}
+          >
+            {loadingImport
+              ? "Importando..."
+              : "📥 Importar"}
+          </button>
         </div>
 
         <div style={kpiGridStyle}>
@@ -373,26 +276,12 @@ function App() {
             <p>Total coches</p>
 
             <h2>
-              {
-                dashboard.stats
-                  .total_cars
-              }
+              {cars.length}
             </h2>
           </div>
 
           <div style={kpiCardStyle}>
-            <p>🔥 Hot deals</p>
-
-            <h2>
-              {
-                dashboard.stats
-                  .hot_deals_count
-              }
-            </h2>
-          </div>
-
-          <div style={kpiCardStyle}>
-            <p>💰 Profit total</p>
+            <p>💰 Profit</p>
 
             <h2
               style={{
@@ -407,20 +296,73 @@ function App() {
           </div>
 
           <div style={kpiCardStyle}>
-            <p>⭐ Score medio</p>
+            <p>📈 ROI medio</p>
+
+            <h2
+              style={{
+                color: "gold",
+              }}
+            >
+              {avgROI}%
+            </h2>
+          </div>
+
+          <div style={kpiCardStyle}>
+            <p>🔥 Hot deals</p>
 
             <h2>
               {
                 dashboard.stats
-                  .avg_score
+                  .hot_deals_count
               }
             </h2>
           </div>
         </div>
 
+        {bestCar && (
+          <div style={bestDealStyle}>
+            <div>
+              <h2>
+                🏆 Mejor oportunidad
+              </h2>
+
+              <h1>
+                {bestCar.brand}{" "}
+                {bestCar.model}
+              </h1>
+
+              <p>
+                Profit:
+                {" "}
+                {
+                  bestCar.estimated_net_profit
+                }
+                €
+              </p>
+
+              <p>
+                ROI:
+                {" "}
+                {Math.round(
+                  (bestCar.estimated_net_profit /
+                    bestCar.price) *
+                    100
+                )}
+                %
+              </p>
+            </div>
+
+            <img
+              src={bestCar.image_url}
+              alt=""
+              style={bestDealImageStyle}
+            />
+          </div>
+        )}
+
         <div style={controlsStyle}>
           <input
-            placeholder="Buscar BMW, Audi..."
+            placeholder="Buscar..."
             value={search}
             onChange={(e) =>
               setSearch(
@@ -444,15 +386,11 @@ function App() {
             </option>
 
             <option value="profit">
-              Mayor beneficio
+              Mayor profit
             </option>
 
             <option value="roi">
               Mayor ROI
-            </option>
-
-            <option value="price">
-              Precio más alto
             </option>
           </select>
         </div>
@@ -490,32 +428,37 @@ function App() {
                   style={imageStyle}
                 />
 
-                <div style={badgeRowStyle}>
-                  {car.is_hot_deal && (
-                    <span
-                      style={
-                        hotBadgeStyle
-                      }
-                    >
-                      🔥 HOT
-                    </span>
-                  )}
-
-                  {car.is_premium_brand && (
-                    <span
-                      style={
-                        premiumBadgeStyle
-                      }
-                    >
-                      ⭐ PREMIUM
-                    </span>
-                  )}
-                </div>
-
                 <h2>
                   {car.brand}{" "}
                   {car.model}
                 </h2>
+
+                <div style={progressContainerStyle}>
+                  <div
+                    style={{
+                      ...progressBarStyle,
+                      width: `${Math.min(
+                        roi,
+                        100
+                      )}%`,
+                    }}
+                  />
+                </div>
+
+                <p>
+                  ROI {roi}%
+                </p>
+
+                <div
+                  style={
+                    recommendationStyle
+                  }
+                >
+                  🧠{" "}
+                  {
+                    car.recommendation
+                  }
+                </div>
 
                 <div
                   style={
@@ -542,42 +485,7 @@ function App() {
                     }
                   >
                     <small>
-                      ROI
-                    </small>
-
-                    <strong
-                      style={{
-                        color:
-                          roi > 15
-                            ? "#22c55e"
-                            : "gold",
-                      }}
-                    >
-                      {roi}%
-                    </strong>
-                  </div>
-
-                  <div
-                    style={
-                      miniCardStyle
-                    }
-                  >
-                    <small>
-                      SCORE
-                    </small>
-
-                    <strong>
-                      {car.score}
-                    </strong>
-                  </div>
-
-                  <div
-                    style={
-                      miniCardStyle
-                    }
-                  >
-                    <small>
-                      BENEFICIO
+                      PROFIT
                     </small>
 
                     <strong
@@ -592,17 +500,6 @@ function App() {
                       €
                     </strong>
                   </div>
-                </div>
-
-                <div
-                  style={
-                    recommendationStyle
-                  }
-                >
-                  🧠{" "}
-                  {
-                    car.recommendation
-                  }
                 </div>
 
                 <button
@@ -640,119 +537,6 @@ function App() {
             );
           })}
         </section>
-
-        {showModal && (
-          <div style={modalOverlayStyle}>
-            <div style={modalStyle}>
-              <h2>
-                ➕ Crear coche
-              </h2>
-
-              <input
-                placeholder="Marca"
-                value={newCar.brand}
-                onChange={(e) =>
-                  setNewCar({
-                    ...newCar,
-                    brand:
-                      e.target.value,
-                  })
-                }
-                style={modalInputStyle}
-              />
-
-              <input
-                placeholder="Modelo"
-                value={newCar.model}
-                onChange={(e) =>
-                  setNewCar({
-                    ...newCar,
-                    model:
-                      e.target.value,
-                  })
-                }
-                style={modalInputStyle}
-              />
-
-              <input
-                placeholder="Año"
-                value={newCar.year}
-                onChange={(e) =>
-                  setNewCar({
-                    ...newCar,
-                    year:
-                      e.target.value,
-                  })
-                }
-                style={modalInputStyle}
-              />
-
-              <input
-                placeholder="KM"
-                value={newCar.km}
-                onChange={(e) =>
-                  setNewCar({
-                    ...newCar,
-                    km: e.target.value,
-                  })
-                }
-                style={modalInputStyle}
-              />
-
-              <input
-                placeholder="Precio"
-                value={newCar.price}
-                onChange={(e) =>
-                  setNewCar({
-                    ...newCar,
-                    price:
-                      e.target.value,
-                  })
-                }
-                style={modalInputStyle}
-              />
-
-              <input
-                placeholder="URL imagen"
-                value={
-                  newCar.image_url
-                }
-                onChange={(e) =>
-                  setNewCar({
-                    ...newCar,
-                    image_url:
-                      e.target.value,
-                  })
-                }
-                style={modalInputStyle}
-              />
-
-              <div style={modalButtonsStyle}>
-                <button
-                  onClick={createCar}
-                  style={
-                    createButtonStyle
-                  }
-                >
-                  Crear
-                </button>
-
-                <button
-                  onClick={() =>
-                    setShowModal(
-                      false
-                    )
-                  }
-                  style={
-                    cancelButtonStyle
-                  }
-                >
-                  Cancelar
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
       </main>
     </div>
   );
@@ -767,18 +551,14 @@ const appStyle = {
 };
 
 const sidebarStyle = {
-  width: "280px",
+  width: "260px",
   background: "#0f172a",
   padding: "25px",
 };
 
 const logoStyle = {
-  fontSize: "32px",
-};
-
-const subLogoStyle = {
-  color: "#94a3b8",
-  marginBottom: "25px",
+  fontSize: "30px",
+  marginBottom: "30px",
 };
 
 const sidebarButtonStyle = {
@@ -789,31 +569,12 @@ const sidebarButtonStyle = {
   background: "#1e293b",
   color: "white",
   cursor: "pointer",
-  fontSize: "16px",
-  marginBottom: "12px",
-};
-
-const greenButtonStyle = {
-  width: "100%",
-  padding: "16px",
-  borderRadius: "16px",
-  border: "none",
-  background: "#16a34a",
-  color: "white",
-  cursor: "pointer",
-  fontSize: "16px",
   marginBottom: "12px",
 };
 
 const logoutButtonStyle = {
-  width: "100%",
-  padding: "16px",
-  borderRadius: "16px",
-  border: "none",
+  ...sidebarButtonStyle,
   background: "#dc2626",
-  color: "white",
-  cursor: "pointer",
-  fontSize: "16px",
 };
 
 const contentStyle = {
@@ -826,11 +587,6 @@ const topBarStyle = {
   justifyContent:
     "space-between",
   alignItems: "center",
-};
-
-const headerButtonsStyle = {
-  display: "flex",
-  gap: "12px",
 };
 
 const titleStyle = {
@@ -857,8 +613,8 @@ const kpiGridStyle = {
   gridTemplateColumns:
     "repeat(auto-fit,minmax(220px,1fr))",
   gap: "20px",
-  marginTop: "35px",
-  marginBottom: "35px",
+  marginTop: "30px",
+  marginBottom: "30px",
 };
 
 const kpiCardStyle = {
@@ -866,6 +622,25 @@ const kpiCardStyle = {
     "rgba(30,41,59,0.8)",
   padding: "25px",
   borderRadius: "24px",
+};
+
+const bestDealStyle = {
+  background:
+    "linear-gradient(135deg,#1e293b,#0f172a)",
+  padding: "30px",
+  borderRadius: "28px",
+  marginBottom: "30px",
+  display: "flex",
+  justifyContent:
+    "space-between",
+  alignItems: "center",
+};
+
+const bestDealImageStyle = {
+  width: "320px",
+  height: "180px",
+  objectFit: "cover",
+  borderRadius: "18px",
 };
 
 const controlsStyle = {
@@ -894,7 +669,7 @@ const selectStyle = {
 const gridStyle = {
   display: "grid",
   gridTemplateColumns:
-    "repeat(auto-fit,minmax(360px,1fr))",
+    "repeat(auto-fit,minmax(340px,1fr))",
   gap: "25px",
 };
 
@@ -912,26 +687,28 @@ const imageStyle = {
   marginBottom: "15px",
 };
 
-const badgeRowStyle = {
-  display: "flex",
-  gap: "10px",
-  marginBottom: "14px",
+const progressContainerStyle = {
+  width: "100%",
+  height: "12px",
+  background: "#0f172a",
+  borderRadius: "999px",
+  overflow: "hidden",
+  marginTop: "14px",
 };
 
-const hotBadgeStyle = {
-  background: "gold",
-  color: "black",
-  padding: "8px 12px",
-  borderRadius: "10px",
-  fontWeight: "bold",
+const progressBarStyle = {
+  height: "100%",
+  background:
+    "linear-gradient(90deg,#22c55e,gold)",
 };
 
-const premiumBadgeStyle = {
-  background: "#334155",
-  color: "white",
-  padding: "8px 12px",
-  borderRadius: "10px",
-  fontWeight: "bold",
+const recommendationStyle = {
+  background:
+    "linear-gradient(135deg,#1d4ed8,#2563eb)",
+  padding: "16px",
+  borderRadius: "14px",
+  marginTop: "18px",
+  marginBottom: "18px",
 };
 
 const miniGridStyle = {
@@ -939,8 +716,6 @@ const miniGridStyle = {
   gridTemplateColumns:
     "repeat(2,1fr)",
   gap: "12px",
-  marginTop: "20px",
-  marginBottom: "20px",
 };
 
 const miniCardStyle = {
@@ -949,17 +724,9 @@ const miniCardStyle = {
   borderRadius: "14px",
 };
 
-const recommendationStyle = {
-  background:
-    "linear-gradient(135deg,#1d4ed8,#2563eb)",
-  padding: "16px",
-  borderRadius: "14px",
-  marginBottom: "18px",
-};
-
 const favoriteButtonStyle = {
   width: "100%",
-  marginTop: "10px",
+  marginTop: "16px",
   padding: "14px",
   borderRadius: "14px",
   border: "none",
@@ -978,65 +745,13 @@ const deleteButtonStyle = {
   cursor: "pointer",
 };
 
-const modalOverlayStyle = {
-  position: "fixed",
-  inset: 0,
-  background:
-    "rgba(0,0,0,0.7)",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-};
-
-const modalStyle = {
-  background: "#0f172a",
-  padding: "30px",
-  borderRadius: "24px",
-  width: "420px",
-  display: "grid",
-  gap: "14px",
-};
-
-const modalInputStyle = {
-  padding: "16px",
-  borderRadius: "14px",
-  border: "none",
-  background: "#1e293b",
-  color: "white",
-};
-
-const modalButtonsStyle = {
-  display: "flex",
-  gap: "12px",
-};
-
-const createButtonStyle = {
-  flex: 1,
-  padding: "16px",
-  borderRadius: "14px",
-  border: "none",
-  background: "#16a34a",
-  color: "white",
-  cursor: "pointer",
-};
-
-const cancelButtonStyle = {
-  flex: 1,
-  padding: "16px",
-  borderRadius: "14px",
-  border: "none",
-  background: "#334155",
-  color: "white",
-  cursor: "pointer",
-};
-
 const loginPageStyle = {
   minHeight: "100vh",
   background: "#020617",
-  color: "white",
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
+  color: "white",
 };
 
 const loginCardStyle = {
@@ -1053,8 +768,8 @@ const loginInputStyle = {
   border: "none",
   background: "#0f172a",
   color: "white",
-  marginTop: "18px",
-  marginBottom: "18px",
+  marginTop: "20px",
+  marginBottom: "20px",
 };
 
 const loginButtonStyle = {

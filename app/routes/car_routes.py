@@ -17,10 +17,6 @@ router = APIRouter(
 )
 
 
-# -------------------------
-# CREAR COCHE
-# -------------------------
-
 @router.post("/")
 def create_car(
     car: CarCreate,
@@ -42,16 +38,70 @@ def create_car(
     return db_car
 
 
-# -------------------------
-# LISTAR COCHES
-# -------------------------
-
 @router.get("/")
 def list_cars(
     db: Session = Depends(get_db)
 ):
 
     return db.query(Car).all()
+
+
+# -------------------------
+# DASHBOARD
+# -------------------------
+
+@router.get("/dashboard")
+def dashboard(
+    db: Session = Depends(get_db)
+):
+
+    cars = db.query(Car).all()
+
+    analyzed_cars = []
+
+    for car in cars:
+
+        analyzed = analyze_car_deal(car)
+
+        analyzed_cars.append(analyzed)
+
+    analyzed_cars.sort(
+        key=lambda x: x["score"],
+        reverse=True
+    )
+
+    hot_deals = [
+        car for car in analyzed_cars
+        if car["is_hot_deal"]
+    ]
+
+    logs = db.query(ImportLog).all()
+
+    total_cars = len(analyzed_cars)
+
+    avg_score = 0
+
+    if total_cars > 0:
+
+        avg_score = round(
+            sum(car["score"] for car in analyzed_cars) / 
+total_cars,
+            2
+        )
+
+    return {
+        "stats": {
+            "total_cars": total_cars,
+            "avg_score": avg_score,
+            "hot_deals_count": len(hot_deals)
+        },
+
+        "top_deals": analyzed_cars[:5],
+
+        "hot_deals": hot_deals[:5],
+
+        "latest_imports": logs[-5:]
+    }
 
 
 # -------------------------
@@ -148,7 +198,7 @@ def import_mobile_cars(
 
 
 # -------------------------
-# VER LOGS IMPORTACION
+# IMPORT LOGS
 # -------------------------
 
 @router.get("/import-logs")
@@ -156,9 +206,7 @@ def get_import_logs(
     db: Session = Depends(get_db)
 ):
 
-    logs = db.query(ImportLog).all()
-
-    return logs
+    return db.query(ImportLog).all()
 
 
 # -------------------------
@@ -175,6 +223,7 @@ def get_stats(
     analyzed_cars = []
 
     for car in cars:
+
         analyzed_cars.append(
             analyze_car_deal(car)
         )

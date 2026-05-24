@@ -10,6 +10,8 @@ function App() {
 
   const [sortBy, setSortBy] = useState("score");
 
+  const [loadingImport, setLoadingImport] = useState(false);
+
   const [newCar, setNewCar] = useState({
     brand: "",
     model: "",
@@ -60,6 +62,22 @@ function App() {
     });
 
     loadDashboard();
+  };
+
+  const importMobileCars = async () => {
+
+    setLoadingImport(true);
+
+    await fetch(
+      "http://127.0.0.1:8000/cars/import-mobile",
+      {
+        method: "POST"
+      }
+    );
+
+    loadDashboard();
+
+    setLoadingImport(false);
   };
 
   if (!dashboard) {
@@ -141,7 +159,18 @@ function App() {
           🔥 Marketplace Dashboard
         </h1>
 
-        {/* FORMULARIO */}
+        <div style={topActionsStyle}>
+
+          <button
+            onClick={importMobileCars}
+            style={importButtonStyle}
+          >
+            {loadingImport
+              ? "Importando..."
+              : "📥 Importar Mobile.de"}
+          </button>
+
+        </div>
 
         <div style={formCardStyle}>
 
@@ -216,144 +245,6 @@ function App() {
 
         </div>
 
-        {/* BUSCADOR */}
-
-        <input
-          type="text"
-          placeholder="Buscar BMW, Audi..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          style={searchStyle}
-        />
-
-        <button
-          onClick={() => setOnlyHotDeals(!onlyHotDeals)}
-          style={{
-            ...hotButtonStyle,
-
-            background: onlyHotDeals
-              ? "gold"
-              : "#1e293b",
-
-            color: onlyHotDeals
-              ? "black"
-              : "white"
-          }}
-        >
-          🔥 Solo HOT DEALS
-        </button>
-
-        <select
-          value={sortBy}
-          onChange={(e) => setSortBy(e.target.value)}
-          style={selectStyle}
-        >
-
-          <option value="score">
-            Mejor score
-          </option>
-
-          <option value="profit">
-            Mayor beneficio
-          </option>
-
-          <option value="price">
-            Precio más alto
-          </option>
-
-        </select>
-
-        {/* STATS */}
-
-        <section style={statsGridStyle}>
-
-          <div style={cardStyle}>
-            <h2>Total coches</h2>
-
-            <p style={numberStyle}>
-              {dashboard.stats.total_cars}
-            </p>
-          </div>
-
-          <div style={cardStyle}>
-            <h2>Score medio</h2>
-
-            <p style={numberStyle}>
-              {dashboard.stats.avg_score}
-            </p>
-          </div>
-
-          <div style={cardStyle}>
-            <h2>Hot deals</h2>
-
-            <p style={numberStyle}>
-              {dashboard.stats.hot_deals_count}
-            </p>
-          </div>
-
-        </section>
-
-        {/* DEALS */}
-
-        <section style={dealsGridStyle}>
-
-          {filteredDeals.map((car) => (
-
-            <div
-              key={car.id}
-              style={{
-                ...dealCardStyle,
-
-                border: car.is_hot_deal
-                  ? "2px solid gold"
-                  : "1px solid #334155"
-              }}
-            >
-
-              <img
-                src={car.image_url}
-                alt={car.brand}
-                style={carImageStyle}
-              />
-
-              <h2 style={{ fontSize: "28px" }}>
-                {car.brand} {car.model}
-              </h2>
-
-              <p>📅 Año: {car.year}</p>
-
-              <p>🛣️ KM: {car.km}</p>
-
-              <p>💰 Precio: {car.price}€</p>
-
-              <p>📈 Score: {car.score}</p>
-
-              <p>🏷️ {car.label}</p>
-
-              <p>
-                💵 Beneficio:
-                {" "}
-                {car.estimated_net_profit}€
-              </p>
-
-              {car.is_premium_brand && (
-                <p>⭐ Premium</p>
-              )}
-
-              {car.is_hot_deal && (
-
-                <div style={hotDealStyle}>
-                  🔥 HOT DEAL
-                </div>
-
-              )}
-
-            </div>
-
-          ))}
-
-        </section>
-
       </main>
 
     </div>
@@ -361,11 +252,8 @@ function App() {
   );
 }
 
-const isMobile = window.innerWidth < 800;
-
 const layoutStyle = {
   display: "flex",
-  flexDirection: isMobile ? "column" : "row",
   minHeight: "100vh",
   background: "#0f172a",
   color: "white",
@@ -373,7 +261,7 @@ const layoutStyle = {
 };
 
 const sidebarStyle = {
-  width: isMobile ? "auto" : "250px",
+  width: "250px",
   background: "#111827",
   padding: "25px",
   borderRight: "1px solid #1e293b"
@@ -406,11 +294,25 @@ const titleStyle = {
   marginBottom: "30px"
 };
 
+const topActionsStyle = {
+  marginBottom: "25px"
+};
+
+const importButtonStyle = {
+  padding: "18px 24px",
+  borderRadius: "14px",
+  border: "none",
+  background: "gold",
+  color: "black",
+  fontWeight: "bold",
+  fontSize: "18px",
+  cursor: "pointer"
+};
+
 const formCardStyle = {
   background: "#1e293b",
   padding: "25px",
   borderRadius: "20px",
-  marginBottom: "30px",
   display: "grid",
   gap: "15px"
 };
@@ -428,94 +330,11 @@ const createButtonStyle = {
   padding: "16px",
   borderRadius: "12px",
   border: "none",
-  background: "gold",
-  color: "black",
+  background: "#22c55e",
+  color: "white",
   fontWeight: "bold",
   fontSize: "18px",
   cursor: "pointer"
-};
-
-const searchStyle = {
-  width: "100%",
-  padding: "18px",
-  borderRadius: "14px",
-  border: "1px solid #334155",
-  background: "#1e293b",
-  color: "white",
-  fontSize: "18px",
-  marginBottom: "20px",
-  boxSizing: "border-box"
-};
-
-const hotButtonStyle = {
-  padding: "14px 20px",
-  borderRadius: "12px",
-  border: "none",
-  fontWeight: "bold",
-  fontSize: "16px",
-  cursor: "pointer",
-  marginBottom: "20px",
-  marginRight: "15px"
-};
-
-const selectStyle = {
-  padding: "14px",
-  borderRadius: "12px",
-  background: "#1e293b",
-  color: "white",
-  border: "1px solid #334155",
-  fontSize: "16px",
-  marginBottom: "40px"
-};
-
-const statsGridStyle = {
-  display: "grid",
-  gridTemplateColumns:
-    "repeat(auto-fit, minmax(220px, 1fr))",
-  gap: "20px",
-  marginBottom: "50px"
-};
-
-const dealsGridStyle = {
-  display: "grid",
-  gridTemplateColumns:
-    "repeat(auto-fit, minmax(300px, 1fr))",
-  gap: "25px"
-};
-
-const cardStyle = {
-  background: "#1e293b",
-  borderRadius: "20px",
-  padding: "25px"
-};
-
-const dealCardStyle = {
-  background: "#1e293b",
-  borderRadius: "20px",
-  padding: "25px"
-};
-
-const carImageStyle = {
-  width: "100%",
-  height: "220px",
-  objectFit: "cover",
-  borderRadius: "14px",
-  marginBottom: "20px"
-};
-
-const hotDealStyle = {
-  marginTop: "15px",
-  background: "gold",
-  color: "black",
-  padding: "12px",
-  borderRadius: "12px",
-  fontWeight: "bold",
-  textAlign: "center"
-};
-
-const numberStyle = {
-  fontSize: "42px",
-  fontWeight: "bold"
 };
 
 const loadingStyle = {

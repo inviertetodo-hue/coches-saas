@@ -1,16 +1,12 @@
 def estimate_market_price(car):
-    """
-    Estimación más estable de mercado.
-    """
+    base_price = car.price
 
-    base_price = 18000
+    km_penalty = (car.km / 10000) * 300
+    age_bonus = (car.year - 2015) * 500
 
-    km_penalty = (car.km / 10000) * 400
-    age_penalty = (2026 - car.year) * 750
+    market_price = base_price - km_penalty + age_bonus
 
-    market_price = base_price - km_penalty - age_penalty
-
-    return max(market_price, 1200)
+    return max(market_price, 1000)
 
 
 def calculate_margin(car, market_price):
@@ -18,10 +14,6 @@ def calculate_margin(car, market_price):
 
 
 def score_deal(margin, price):
-    """
-    Score 0–100 tipo inversión.
-    """
-
     if price <= 0:
         return 0
 
@@ -29,6 +21,7 @@ def score_deal(margin, price):
 
     if score < 0:
         return 0
+
     if score > 100:
         return 100
 
@@ -36,5 +29,24 @@ def score_deal(margin, price):
 
 
 def is_good_deal(score):
-    return score >= 15
+    return score >= 10
+
+
+def analyze_car_deal(car):
+    market_price = estimate_market_price(car)
+    margin = calculate_margin(car, market_price)
+    score = score_deal(margin, car.price)
+
+    return {
+        "id": car.id,
+        "brand": car.brand,
+        "model": car.model,
+        "year": car.year,
+        "km": car.km,
+        "price": car.price,
+        "estimated_market_price": round(market_price, 2),
+        "margin": round(margin, 2),
+        "score": score,
+        "good_deal": is_good_deal(score)
+    }
 

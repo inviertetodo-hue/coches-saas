@@ -44,8 +44,21 @@ def import_mobile_cars(db: Session = Depends(get_db)):
     scraped_cars = fake_mobile_de_scraper()
 
     imported = []
+    skipped_duplicates = 0
 
     for car in scraped_cars:
+
+        existing_car = db.query(Car).filter(
+            Car.brand == car["brand"],
+            Car.model == car["model"],
+            Car.year == car["year"],
+            Car.km == car["km"],
+            Car.price == car["price"]
+        ).first()
+
+        if existing_car:
+            skipped_duplicates += 1
+            continue
 
         db_car = Car(
             brand=car["brand"],
@@ -63,6 +76,7 @@ def import_mobile_cars(db: Session = Depends(get_db)):
 
     return {
         "imported_count": len(imported),
+        "duplicates_skipped": skipped_duplicates,
         "cars": imported
     }
 
@@ -71,10 +85,13 @@ def import_mobile_cars(db: Session = Depends(get_db)):
 def get_stats(db: Session = Depends(get_db)):
 
     cars = db.query(Car).all()
+
     analyzed_cars = []
 
     for car in cars:
-        analyzed_cars.append(analyze_car_deal(car))
+        analyzed_cars.append(
+            analyze_car_deal(car)
+        )
 
     total_cars = len(analyzed_cars)
 
@@ -84,14 +101,28 @@ def get_stats(db: Session = Depends(get_db)):
     total_risk = 0
 
     if total_cars > 0:
-        avg_price = round(sum(car["price"] for car in 
-analyzed_cars) / total_cars, 2)
-        avg_score = round(sum(car["score"] for car in 
-analyzed_cars) / total_cars, 2)
-        total_chollos = len([car for car in analyzed_cars if 
-car["label"] == "CHOLLO"])
-        total_risk = len([car for car in analyzed_cars if 
-len(car["risk_flags"]) > 0])
+
+        avg_price = round(
+            sum(car["price"] for car in analyzed_cars) / 
+total_cars,
+            2
+        )
+
+        avg_score = round(
+            sum(car["score"] for car in analyzed_cars) / 
+total_cars,
+            2
+        )
+
+        total_chollos = len([
+            car for car in analyzed_cars
+            if car["label"] == "CHOLLO"
+        ])
+
+        total_risk = len([
+            car for car in analyzed_cars
+            if len(car["risk_flags"]) > 0
+        ])
 
     return {
         "total_cars": total_cars,
@@ -104,23 +135,36 @@ len(car["risk_flags"]) > 0])
 
 @router.get("/deals")
 def get_deals(
+
     search: str | None = Query(default=None),
+
     brand: str | None = Query(default=None),
+
     min_price: float | None = Query(default=None),
+
     max_price: float | None = Query(default=None),
+
     min_year: int | None = Query(default=None),
+
     max_km: int | None = Query(default=None),
+
     only_good: bool = Query(default=False),
+
     sort_by: str = Query(default="score"),
+
     page: int = Query(default=1),
+
     limit: int = Query(default=10),
+
     db: Session = Depends(get_db)
 ):
 
     query = db.query(Car)
 
     if search:
+
         query = query.filter(
+
             or_(
                 Car.brand.ilike(f"%{search}%"),
                 Car.model.ilike(f"%{search}%")
@@ -158,18 +202,30 @@ def get_deals(
         analyzed_cars.append(analyzed)
 
     if sort_by == "score":
-        analyzed_cars.sort(key=lambda x: x["score"], 
-reverse=True)
+
+        analyzed_cars.sort(
+            key=lambda x: x["score"],
+            reverse=True
+        )
 
     elif sort_by == "price":
-        analyzed_cars.sort(key=lambda x: x["price"])
+
+        analyzed_cars.sort(
+            key=lambda x: x["price"]
+        )
 
     elif sort_by == "year":
-        analyzed_cars.sort(key=lambda x: x["year"], 
-reverse=True)
+
+        analyzed_cars.sort(
+            key=lambda x: x["year"],
+            reverse=True
+        )
 
     elif sort_by == "km":
-        analyzed_cars.sort(key=lambda x: x["km"])
+
+        analyzed_cars.sort(
+            key=lambda x: x["km"]
+        )
 
     return {
         "page": page,

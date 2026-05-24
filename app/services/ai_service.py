@@ -1,14 +1,15 @@
 import os
-from openai import OpenAI
-
-client = OpenAI(
-    api_key=os.getenv("OPENAI_API_KEY")
-)
 
 
 def analyze_car_with_ai(car):
-    if not os.getenv("OPENAI_API_KEY"):
-        return "IA no configurada. Falta OPENAI_API_KEY."
+    api_key = os.getenv("OPENAI_API_KEY")
+
+    if not api_key:
+        return "IA no configurada. Falta OPENAI_API_KEY en Render."
+
+    from openai import OpenAI
+
+    client = OpenAI(api_key=api_key)
 
     prompt = f"""
 Analiza este coche para compraventa profesional en España.

@@ -72,15 +72,12 @@ def score_deal(car, margin, price):
 
     score = (margin / price) * 100
 
-    # bonus premium
     if is_premium_brand(car.brand):
         score += 5
 
-    # bonus coche moderno
     if car.year >= 2020:
         score += 3
 
-    # penalizacion km altos
     if car.km > 200000:
         score -= 5
 
@@ -143,6 +140,18 @@ def detect_risk_flags(car, margin):
     return risks
 
 
+def is_hot_deal(car, score, net_profit):
+
+    if (
+        is_premium_brand(car.brand)
+        and score >= 25
+        and net_profit >= 3000
+    ):
+        return True
+
+    return False
+
+
 def is_good_deal(score):
 
     return score >= 15
@@ -179,6 +188,12 @@ def analyze_car_deal(car):
         margin
     )
 
+    hot_deal = is_hot_deal(
+        car,
+        score,
+        net_profit
+    )
+
     return {
         "id": car.id,
         "brand": car.brand,
@@ -187,6 +202,7 @@ def analyze_car_deal(car):
         "km": car.km,
         "price": car.price,
         "is_premium_brand": is_premium_brand(car.brand),
+        "is_hot_deal": hot_deal,
         "estimated_market_price": round(market_price, 2),
         "gross_margin": round(margin, 2),
         "estimated_expenses": expenses,

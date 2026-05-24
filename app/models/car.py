@@ -1,16 +1,22 @@
-from sqlalchemy import Column, Integer, String, Float
-from app.database.db import Base
+from pydantic import BaseModel
+from typing import Optional
 
 
-class Car(Base):
-    __tablename__ = "cars"
+class Car(BaseModel):
 
-    id = Column(Integer, primary_key=True, index=True)
+    id: int
 
-    brand = Column(String)
-    model = Column(String)
+    brand: str
 
-    year = Column(Integer)
-    km = Column(Integer)
-    price = Column(Float)
+    model: str
+
+    year: int
+
+    km: int
+
+    price: float
+
+    image_url: Optional[str] = (
+        "https://images.unsplash.com/photo-1503376780353-7e6692767b70"
+    )
 

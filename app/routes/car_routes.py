@@ -1,61 +1,103 @@
-from fastapi import APIRouter, Depends, Query
-from sqlalchemy.orm import Session
-from sqlalchemy import or_
-
-from app.database.deps import get_db
+from fastapi import APIRouter
 from app.models.car import Car
-from app.models.car_schema import CarCreate
-from app.models.import_log import ImportLog
 from app.services.car_analyzer import analyze_car_deal
-from app.services.scraper_service import fake_mobile_de_scraper
 
 router = APIRouter(
     prefix="/cars",
     tags=["Cars"]
 )
 
+cars_db = [
+    Car(
+        id=1,
+        brand="BMW",
+        model="320d",
+        year=2019,
+        km=95000,
+        price=18500,
+        
+image_url="https://images.unsplash.com/photo-1555215695-3004980ad54e"
+    ),
+    Car(
+        id=2,
+        brand="AUDI",
+        model="A4",
+        year=2020,
+        km=85000,
+        price=24000,
+        
+image_url="https://images.unsplash.com/photo-1606664515524-ed2f786a0bd6"
+    ),
+    Car(
+        id=3,
+        brand="MERCEDES",
+        model="C220",
+        year=2018,
+        km=120000,
+        price=21000,
+        
+image_url="https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8"
+    )
+]
 
-@router.post("/")
-def create_car(
-    car: CarCreate,
-    db: Session = Depends(get_db)
-):
-    db_car = Car(
-        brand=car.brand,
-        model=car.model,
-        year=car.year,
-        km=car.km,
-        price=car.price
+
+@router.get("/dashboard")
+def dashboard():
+    analyzed = []
+
+    for car in cars_db:
+        analyzed.append(analyze_car_deal(car))
+
+    analyzed.sort(
+        key=lambda x: x["score"],
+        reverse=True
     )
 
-    db.add(db_car)
-    db.commit()
-    db.refresh(db_car)
+    total_cars = len(analyzed)
 
-    return db_car
+    avg_score = 0
+
+    if total_cars > 0:
+        avg_score = round(
+            sum(car["score"] for car in analyzed) / total_cars,
+            1
+        )
+
+    hot_deals = [
+        car for car in analyzed
+        if car["is_hot_deal"]
+    ]
+
+    return {
+        "stats": {
+            "total_cars": total_cars,
+            "avg_score": avg_score,
+            "hot_deals_count": len(hot_deals)
+        },
+        "top_deals": analyzed,
+        "hot_deals": hot_deals,
+        "latest_imports": []
+    }
 
 
-@router.get("/")
-def list_cars(
-    db: Session = Depends(get_db)
-):
-    return db.query(Car).all()
+@router.post("/")
+def create_car(car: Car):
+    cars_db.append(car)
+
+    return {
+        "message": "Coche añadido",
+        "car": car
+    }
 
 
 @router.delete("/{car_id}")
-def delete_car(
-    car_id: int,
-    db: Session = Depends(get_db)
-):
-    car = db.query(Car).filter(Car.id == car_id).first()
+def delete_car(car_id: int):
+    global cars_db
 
-    if not car:
-        return {
-            "message": "Coche no encontrado"
-        }
-
-    db.delete(car)
-    db.commit()
+    cars_db = [
+        car for car in cars_db
+        if car.id != car_id
+    ]
 
     return {
         "message": "Coche eliminado",
@@ -64,199 +106,22 @@ def delete_car(
 
 
 @router.post("/import-mobile")
-def import_mobile_cars(
-    db: Session = Depends(get_db)
-):
-    scraped_cars = fake_mobile_de_scraper()
-
-    imported = []
-    skipped_duplicates = 0
-
-    for car in scraped_cars:
-
-        existing_car = db.query(Car).filter(
-            Car.brand == car["brand"],
-            Car.model == car["model"],
-            Car.year == car["year"],
-            Car.km == car["km"],
-            Car.price == car["price"]
-        ).first()
-
-        if existing_car:
-            skipped_duplicates += 1
-            continue
-
-        db_car = Car(
-            brand=car["brand"],
-            model=car["model"],
-            year=car["year"],
-            km=car["km"],
-            price=car["price"]
-        )
-
-        db.add(db_car)
-        imported.append(db_car)
-
-    db.commit()
-
-    for car in imported:
-        db.refresh(car)
-
-    log = ImportLog(
-        source="mobile.de",
-        imported_count=len(imported),
-        duplicates_skipped=skipped_duplicates
+def import_mobile():
+    new_car = Car(
+        id=len(cars_db) + 1,
+        brand="PORSCHE",
+        model="Macan",
+        year=2021,
+        km=45000,
+        price=52000,
+        
+image_url="https://images.unsplash.com/photo-1503376780353-7e6692767b70"
     )
 
-    db.add(log)
-    db.commit()
+    cars_db.append(new_car)
 
     return {
-        "imported_count": len(imported),
-        "duplicates_skipped": skipped_duplicates,
-        "cars": imported
-    }
-
-
-@router.get("/import-logs")
-def get_import_logs(
-    db: Session = Depends(get_db)
-):
-    return db.query(ImportLog).all()
-
-
-@router.get("/dashboard")
-def dashboard(
-    db: Session = Depends(get_db)
-):
-    cars = db.query(Car).all()
-
-    analyzed_cars = []
-
-    for car in cars:
-        analyzed_cars.append(
-            analyze_car_deal(car)
-        )
-
-    analyzed_cars.sort(
-        key=lambda x: x["score"],
-        reverse=True
-    )
-
-    hot_deals = [
-        car for car in analyzed_cars
-        if car["is_hot_deal"]
-    ]
-
-    total_cars = len(analyzed_cars)
-
-    avg_score = 0
-
-    if total_cars > 0:
-        avg_score = round(
-            sum(car["score"] for car in analyzed_cars) / total_cars,
-            2
-        )
-
-    logs = db.query(ImportLog).all()
-
-    return {
-        "stats": {
-            "total_cars": total_cars,
-            "avg_score": avg_score,
-            "hot_deals_count": len(hot_deals)
-        },
-        "top_deals": analyzed_cars[:20],
-        "hot_deals": hot_deals[:10],
-        "latest_imports": logs[-5:]
-    }
-
-
-@router.get("/deals")
-def get_deals(
-    search: str | None = Query(default=None),
-    brand: str | None = Query(default=None),
-    min_price: float | None = Query(default=None),
-    max_price: float | None = Query(default=None),
-    min_year: int | None = Query(default=None),
-    max_km: int | None = Query(default=None),
-    only_good: bool = Query(default=False),
-    sort_by: str = Query(default="score"),
-    page: int = Query(default=1),
-    limit: int = Query(default=10),
-    db: Session = Depends(get_db)
-):
-    query = db.query(Car)
-
-    if search:
-        query = query.filter(
-            or_(
-                Car.brand.ilike(f"%{search}%"),
-                Car.model.ilike(f"%{search}%")
-            )
-        )
-
-    if brand:
-        query = query.filter(Car.brand.ilike(f"%{brand}%"))
-
-    if min_price is not None:
-        query = query.filter(Car.price >= min_price)
-
-    if max_price is not None:
-        query = query.filter(Car.price <= max_price)
-
-    if min_year is not None:
-        query = query.filter(Car.year >= min_year)
-
-    if max_km is not None:
-        query = query.filter(Car.km <= max_km)
-
-    offset = (page - 1) * limit
-
-    cars = query.offset(offset).limit(limit).all()
-
-    analyzed_cars = []
-
-    for car in cars:
-        analyzed = analyze_car_deal(car)
-
-        if only_good and not analyzed["good_deal"]:
-            continue
-
-        analyzed_cars.append(analyzed)
-
-    if sort_by == "score":
-        analyzed_cars.sort(key=lambda x: x["score"], reverse=True)
-
-    elif sort_by == "price":
-        analyzed_cars.sort(key=lambda x: x["price"])
-
-    elif sort_by == "year":
-        analyzed_cars.sort(key=lambda x: x["year"], reverse=True)
-
-    elif sort_by == "km":
-        analyzed_cars.sort(key=lambda x: x["km"])
-
-    elif sort_by == "profit":
-        analyzed_cars.sort(
-            key=lambda x: x["estimated_net_profit"],
-            reverse=True
-        )
-
-    return {
-        "page": page,
-        "limit": limit,
-        "total_results": len(analyzed_cars),
-        "sort_by": sort_by,
-        "filters": {
-            "search": search,
-            "brand": brand,
-            "min_price": min_price,
-            "max_price": max_price,
-            "min_year": min_year,
-            "max_km": max_km,
-            "only_good": only_good
-        },
-        "deals": analyzed_cars
+        "message": "Importación completada",
+        "car": new_car
     }
 

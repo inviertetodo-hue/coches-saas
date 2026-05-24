@@ -1,174 +1,237 @@
-def is_premium_brand(brand):
-    premium_brands = [
-        "BMW",
-        "AUDI",
-        "MERCEDES",
-        "PORSCHE",
-        "LEXUS",
-        "VOLVO"
-    ]
-
-    return brand.upper() in premium_brands
+from math import floor
 
 
-def get_car_image(car):
-    brand = car.brand.upper()
-
-    if brand == "BMW":
-        return "https://images.unsplash.com/photo-1555215695-3004980ad54e"
-
-    if brand == "AUDI":
-        return "https://images.unsplash.com/photo-1606664515524-ed2f786a0bd6"
-
-    if brand == "MERCEDES":
-        return "https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8"
-
-    return "https://images.unsplash.com/photo-1492144534655-ae79c964c9d7"
+PREMIUM_BRANDS = [
+    "BMW",
+    "AUDI",
+    "MERCEDES",
+    "PORSCHE",
+    "LEXUS",
+    "TESLA"
+]
 
 
-def estimate_market_price(car):
-    base_price = car.price
-    km_penalty = (car.km / 10000) * 300
-    age_bonus = (car.year - 2015) * 500
-    premium_bonus = 0
+def calculate_market_price(car):
 
-    if is_premium_brand(car.brand):
-        premium_bonus = car.price * 0.08
+    base = car.price * 1.35
 
-    market_price = base_price - km_penalty + age_bonus + premium_bonus
+    age_penalty = (2025 - car.year) * 450
 
-    return max(market_price, 1000)
+    km_penalty = floor(car.km / 10000) * 180
 
+    market_price = (
+        base
+        - age_penalty
+        - km_penalty
+    )
 
-def calculate_margin(car, market_price):
-    return market_price - car.price
-
-
-def estimate_expenses(car):
-    transport_cost = 600
-    transfer_cost = car.price * 0.04
-    repair_buffer = 800
-    dealer_margin_cost = car.price * 0.02
-
-    total_expenses = transport_cost + transfer_cost + repair_buffer + dealer_margin_cost
-
-    return round(total_expenses, 2)
+    return max(market_price, 0)
 
 
-def estimate_net_profit(margin, expenses):
-    return round(margin - expenses, 2)
+def calculate_expenses(car):
+
+    transport = 650
+    plates = 250
+    paperwork = 300
+
+    repairs = 0
+
+    if car.km > 180000:
+        repairs += 2500
+
+    elif car.km > 140000:
+        repairs += 1500
+
+    elif car.km > 100000:
+        repairs += 800
+
+    premium_tax = 0
+
+    if car.brand in PREMIUM_BRANDS:
+        premium_tax = 500
+
+    return (
+        transport
+        + plates
+        + paperwork
+        + repairs
+        + premium_tax
+    )
 
 
-def score_deal(car, margin, price):
-    if price <= 0:
-        return 0
+def calculate_score(
+    net_profit,
+    market_price,
+    expenses,
+    car
+):
 
-    score = (margin / price) * 100
+    score = 0
 
-    if is_premium_brand(car.brand):
-        score += 5
+    if net_profit > 6000:
+        score += 40
+
+    elif net_profit > 3000:
+        score += 25
+
+    elif net_profit > 1000:
+        score += 10
+
+    if car.brand in PREMIUM_BRANDS:
+        score += 20
 
     if car.year >= 2020:
-        score += 3
+        score += 20
 
-    if car.km > 200000:
-        score -= 5
+    elif car.year >= 2018:
+        score += 10
 
-    if score < 0:
-        return 0
+    if car.km < 100000:
+        score += 20
 
-    if score > 100:
-        return 100
+    elif car.km < 150000:
+        score += 10
 
-    return round(score, 2)
+    if expenses > 5000:
+        score -= 30
 
+    if net_profit < 0:
+        score = 0
 
-def get_deal_label(score):
-    if score >= 30:
-        return "CHOLLO PREMIUM"
-
-    if score >= 25:
-        return "CHOLLO"
-
-    if score >= 15:
-        return "BUENO"
-
-    if score >= 5:
-        return "NORMAL"
-
-    return "RIESGO"
+    return min(score, 100)
 
 
-def get_buy_recommendation(score, net_profit):
-    if score >= 30 and net_profit > 4000:
-        return "COMPRAR YA"
+def get_label(score):
 
-    if score >= 20 and net_profit > 2000:
-        return "MUY INTERESANTE"
+    if score >= 80:
+        return "HOT DEAL"
 
-    if score >= 10:
-        return "REVISAR"
+    if score >= 60:
+        return "MUY BUENO"
+
+    if score >= 40:
+        return "INTERESANTE"
+
+    if score >= 20:
+        return "RIESGO"
 
     return "DESCARTAR"
 
 
-def detect_risk_flags(car, margin):
+def get_recommendation(score):
+
+    if score >= 80:
+        return "COMPRAR YA"
+
+    if score >= 60:
+        return "MUY RECOMENDABLE"
+
+    if score >= 40:
+        return "REVISAR"
+
+    if score >= 20:
+        return "RIESGO ALTO"
+
+    return "NO COMPRAR"
+
+
+def detect_risks(car):
+
     risks = []
 
-    if car.price < 2000:
-        risks.append("PRECIO DEMASIADO BAJO")
+    if car.km > 200000:
+        risks.append("KM MUY ALTO")
 
-    if car.km > 250000:
-        risks.append("KILOMETRAJE MUY ALTO")
-
-    if car.year < 2010:
+    if car.year < 2014:
         risks.append("COCHE ANTIGUO")
 
-    if margin < 0:
-        risks.append("MARGEN NEGATIVO")
+    if car.price > 60000:
+        risks.append("PRECIO ELEVADO")
+
+    if car.brand not in PREMIUM_BRANDS:
+        risks.append("MENOR DEMANDA")
 
     return risks
 
 
-def is_hot_deal(car, score, net_profit):
-    if is_premium_brand(car.brand) and score >= 25 and net_profit >= 3000:
-        return True
+def is_hot_deal(score):
 
-    return False
-
-
-def is_good_deal(score):
-    return score >= 15
+    return score >= 80
 
 
 def analyze_car_deal(car):
-    market_price = estimate_market_price(car)
-    margin = calculate_margin(car, market_price)
-    expenses = estimate_expenses(car)
-    net_profit = estimate_net_profit(margin, expenses)
-    score = score_deal(car, margin, car.price)
-    label = get_deal_label(score)
-    recommendation = get_buy_recommendation(score, net_profit)
-    risks = detect_risk_flags(car, margin)
-    hot_deal = is_hot_deal(car, score, net_profit)
+
+    market_price = calculate_market_price(car)
+
+    expenses = calculate_expenses(car)
+
+    gross_margin = (
+        market_price - car.price
+    )
+
+    net_profit = (
+        market_price
+        - car.price
+        - expenses
+    )
+
+    score = calculate_score(
+        net_profit,
+        market_price,
+        expenses,
+        car
+    )
+
+    label = get_label(score)
+
+    recommendation = get_recommendation(score)
+
+    risks = detect_risks(car)
 
     return {
+
         "id": car.id,
+
         "brand": car.brand,
+
         "model": car.model,
+
         "year": car.year,
+
         "km": car.km,
+
         "price": car.price,
-        "image_url": get_car_image(car),
-        "is_premium_brand": is_premium_brand(car.brand),
-        "is_hot_deal": hot_deal,
-        "estimated_market_price": round(market_price, 2),
-        "gross_margin": round(margin, 2),
-        "estimated_expenses": expenses,
-        "estimated_net_profit": net_profit,
-        "score": score,
-        "label": label,
-        "recommendation": recommendation,
-        "good_deal": is_good_deal(score),
-        "risk_flags": risks
+
+        "image_url": car.image_url,
+
+        "is_premium_brand":
+            car.brand in PREMIUM_BRANDS,
+
+        "estimated_market_price":
+            round(market_price, 2),
+
+        "estimated_expenses":
+            round(expenses, 2),
+
+        "gross_margin":
+            round(gross_margin, 2),
+
+        "estimated_net_profit":
+            round(net_profit, 2),
+
+        "score":
+            score,
+
+        "label":
+            label,
+
+        "recommendation":
+            recommendation,
+
+        "is_hot_deal":
+            is_hot_deal(score),
+
+        "risk_flags":
+            risks
     }
+

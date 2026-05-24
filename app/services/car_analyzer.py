@@ -16,6 +16,31 @@ def calculate_margin(car, market_price):
     return market_price - car.price
 
 
+def estimate_expenses(car):
+
+    transport_cost = 600
+
+    transfer_cost = car.price * 0.04
+
+    repair_buffer = 800
+
+    dealer_margin_cost = car.price * 0.02
+
+    total_expenses = (
+        transport_cost +
+        transfer_cost +
+        repair_buffer +
+        dealer_margin_cost
+    )
+
+    return round(total_expenses, 2)
+
+
+def estimate_net_profit(margin, expenses):
+
+    return round(margin - expenses, 2)
+
+
 def score_deal(margin, price):
 
     if price <= 0:
@@ -46,12 +71,12 @@ def get_deal_label(score):
     return "RIESGO"
 
 
-def get_buy_recommendation(score, margin):
+def get_buy_recommendation(score, net_profit):
 
-    if score >= 25 and margin > 3000:
+    if score >= 25 and net_profit > 3000:
         return "COMPRAR YA"
 
-    if score >= 15 and margin > 1500:
+    if score >= 15 and net_profit > 1500:
         return "MUY INTERESANTE"
 
     if score >= 5:
@@ -64,19 +89,15 @@ def detect_risk_flags(car, margin):
 
     risks = []
 
-    # precio sospechosamente bajo
     if car.price < 2000:
         risks.append("PRECIO DEMASIADO BAJO")
 
-    # demasiados km
     if car.km > 250000:
         risks.append("KILOMETRAJE MUY ALTO")
 
-    # coche viejo
     if car.year < 2010:
         risks.append("COCHE ANTIGUO")
 
-    # margen negativo
     if margin < 0:
         risks.append("MARGEN NEGATIVO")
 
@@ -94,11 +115,21 @@ def analyze_car_deal(car):
 
     margin = calculate_margin(car, market_price)
 
+    expenses = estimate_expenses(car)
+
+    net_profit = estimate_net_profit(
+        margin,
+        expenses
+    )
+
     score = score_deal(margin, car.price)
 
     label = get_deal_label(score)
 
-    recommendation = get_buy_recommendation(score, margin)
+    recommendation = get_buy_recommendation(
+        score,
+        net_profit
+    )
 
     risks = detect_risk_flags(car, margin)
 
@@ -110,7 +141,9 @@ def analyze_car_deal(car):
         "km": car.km,
         "price": car.price,
         "estimated_market_price": round(market_price, 2),
-        "margin": round(margin, 2),
+        "gross_margin": round(margin, 2),
+        "estimated_expenses": expenses,
+        "estimated_net_profit": net_profit,
         "score": score,
         "label": label,
         "recommendation": recommendation,

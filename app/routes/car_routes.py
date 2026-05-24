@@ -3,11 +3,9 @@ from sqlalchemy.orm import Session
 from sqlalchemy import or_
 
 from app.database.deps import get_db
-
 from app.models.car import Car
 from app.models.car_schema import CarCreate
 from app.models.import_log import ImportLog
-
 from app.services.car_analyzer import analyze_car_deal
 from app.services.scraper_service import fake_mobile_de_scraper
 
@@ -22,7 +20,6 @@ def create_car(
     car: CarCreate,
     db: Session = Depends(get_db)
 ):
-
     db_car = Car(
         brand=car.brand,
         model=car.model,
@@ -42,112 +39,37 @@ def create_car(
 def list_cars(
     db: Session = Depends(get_db)
 ):
-
     return db.query(Car).all()
 
 
-# -------------------------
-# DASHBOARD
-# -------------------------
-
-@router.get("/dashboard")
-def dashboard(
+@router.delete("/{car_id}")
+def delete_car(
+    car_id: int,
     db: Session = Depends(get_db)
 ):
+    car = db.query(Car).filter(Car.id == car_id).first()
 
-    cars = db.query(Car).all()
+    if not car:
+        return {
+            "message": "Coche no encontrado"
+        }
 
-    analyzed_cars = []
-
-    for car in cars:
-
-        analyzed = analyze_car_deal(car)
-
-        analyzed_cars.append(analyzed)
-
-    analyzed_cars.sort(
-        key=lambda x: x["score"],
-        reverse=True
-    )
-
-    hot_deals = [
-        car for car in analyzed_cars
-        if car["is_hot_deal"]
-    ]
-
-    logs = db.query(ImportLog).all()
-
-    total_cars = len(analyzed_cars)
-
-    avg_score = 0
-
-    if total_cars > 0:
-
-        avg_score = round(
-            sum(car["score"] for car in analyzed_cars) / 
-total_cars,
-            2
-        )
+    db.delete(car)
+    db.commit()
 
     return {
-        "stats": {
-            "total_cars": total_cars,
-            "avg_score": avg_score,
-            "hot_deals_count": len(hot_deals)
-        },
-
-        "top_deals": analyzed_cars[:5],
-
-        "hot_deals": hot_deals[:5],
-
-        "latest_imports": logs[-5:]
+        "message": "Coche eliminado",
+        "car_id": car_id
     }
 
-
-# -------------------------
-# TOP DEALS
-# -------------------------
-
-@router.get("/top-deals")
-def get_top_deals(
-    limit: int = Query(default=5),
-    db: Session = Depends(get_db)
-):
-
-    cars = db.query(Car).all()
-
-    analyzed_cars = []
-
-    for car in cars:
-
-        analyzed = analyze_car_deal(car)
-
-        analyzed_cars.append(analyzed)
-
-    analyzed_cars.sort(
-        key=lambda x: x["score"],
-        reverse=True
-    )
-
-    return {
-        "total": len(analyzed_cars),
-        "top_deals": analyzed_cars[:limit]
-    }
-
-
-# -------------------------
-# IMPORT MOBILE
-# -------------------------
 
 @router.post("/import-mobile")
 def import_mobile_cars(
     db: Session = Depends(get_db)
 ):
-
     scraped_cars = fake_mobile_de_scraper()
 
     imported = []
-
     skipped_duplicates = 0
 
     for car in scraped_cars:
@@ -173,7 +95,6 @@ def import_mobile_cars(
         )
 
         db.add(db_car)
-
         imported.append(db_car)
 
     db.commit()
@@ -197,113 +118,78 @@ def import_mobile_cars(
     }
 
 
-# -------------------------
-# IMPORT LOGS
-# -------------------------
-
 @router.get("/import-logs")
 def get_import_logs(
     db: Session = Depends(get_db)
 ):
-
     return db.query(ImportLog).all()
 
 
-# -------------------------
-# STATS
-# -------------------------
-
-@router.get("/stats")
-def get_stats(
+@router.get("/dashboard")
+def dashboard(
     db: Session = Depends(get_db)
 ):
-
     cars = db.query(Car).all()
 
     analyzed_cars = []
 
     for car in cars:
-
         analyzed_cars.append(
             analyze_car_deal(car)
         )
 
+    analyzed_cars.sort(
+        key=lambda x: x["score"],
+        reverse=True
+    )
+
+    hot_deals = [
+        car for car in analyzed_cars
+        if car["is_hot_deal"]
+    ]
+
     total_cars = len(analyzed_cars)
 
-    avg_price = 0
     avg_score = 0
-    total_chollos = 0
-    total_risk = 0
 
     if total_cars > 0:
-
-        avg_price = round(
-            sum(car["price"] for car in analyzed_cars) / 
-total_cars,
-            2
-        )
-
         avg_score = round(
-            sum(car["score"] for car in analyzed_cars) / 
-total_cars,
+            sum(car["score"] for car in analyzed_cars) / total_cars,
             2
         )
 
-        total_chollos = len([
-            car for car in analyzed_cars
-            if "CHOLLO" in car["label"]
-        ])
-
-        total_risk = len([
-            car for car in analyzed_cars
-            if len(car["risk_flags"]) > 0
-        ])
+    logs = db.query(ImportLog).all()
 
     return {
-        "total_cars": total_cars,
-        "avg_price": avg_price,
-        "avg_score": avg_score,
-        "total_chollos": total_chollos,
-        "total_with_risk": total_risk
+        "stats": {
+            "total_cars": total_cars,
+            "avg_score": avg_score,
+            "hot_deals_count": len(hot_deals)
+        },
+        "top_deals": analyzed_cars[:20],
+        "hot_deals": hot_deals[:10],
+        "latest_imports": logs[-5:]
     }
 
 
-# -------------------------
-# DEALS
-# -------------------------
-
 @router.get("/deals")
 def get_deals(
-
     search: str | None = Query(default=None),
-
     brand: str | None = Query(default=None),
-
     min_price: float | None = Query(default=None),
-
     max_price: float | None = Query(default=None),
-
     min_year: int | None = Query(default=None),
-
     max_km: int | None = Query(default=None),
-
     only_good: bool = Query(default=False),
-
     sort_by: str = Query(default="score"),
-
     page: int = Query(default=1),
-
     limit: int = Query(default=10),
-
     db: Session = Depends(get_db)
 ):
-
     query = db.query(Car)
 
     if search:
-
         query = query.filter(
-
             or_(
                 Car.brand.ilike(f"%{search}%"),
                 Car.model.ilike(f"%{search}%")
@@ -332,7 +218,6 @@ def get_deals(
     analyzed_cars = []
 
     for car in cars:
-
         analyzed = analyze_car_deal(car)
 
         if only_good and not analyzed["good_deal"]:
@@ -341,29 +226,21 @@ def get_deals(
         analyzed_cars.append(analyzed)
 
     if sort_by == "score":
-
-        analyzed_cars.sort(
-            key=lambda x: x["score"],
-            reverse=True
-        )
+        analyzed_cars.sort(key=lambda x: x["score"], reverse=True)
 
     elif sort_by == "price":
-
-        analyzed_cars.sort(
-            key=lambda x: x["price"]
-        )
+        analyzed_cars.sort(key=lambda x: x["price"])
 
     elif sort_by == "year":
-
-        analyzed_cars.sort(
-            key=lambda x: x["year"],
-            reverse=True
-        )
+        analyzed_cars.sort(key=lambda x: x["year"], reverse=True)
 
     elif sort_by == "km":
+        analyzed_cars.sort(key=lambda x: x["km"])
 
+    elif sort_by == "profit":
         analyzed_cars.sort(
-            key=lambda x: x["km"]
+            key=lambda x: x["estimated_net_profit"],
+            reverse=True
         )
 
     return {

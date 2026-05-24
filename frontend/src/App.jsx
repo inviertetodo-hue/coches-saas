@@ -1,124 +1,67 @@
 import { useEffect, useState } from "react";
 
+const API_URL = "http://127.0.0.1:8000";
+
 function App() {
-
   const [dashboard, setDashboard] = useState(null);
-
+  const [favorites, setFavorites] = useState([]);
   const [search, setSearch] = useState("");
-
-  const [onlyHotDeals, setOnlyHotDeals] = useState(false);
-
   const [sortBy, setSortBy] = useState("score");
-
-  const [loadingImport, setLoadingImport] = useState(false);
-
-  const [newCar, setNewCar] = useState({
-    brand: "",
-    model: "",
-    year: "",
-    km: "",
-    price: ""
-  });
-
-  const loadDashboard = () => {
-
-    fetch("http://127.0.0.1:8000/cars/dashboard")
-      .then((response) => response.json())
-      .then((data) => {
-        setDashboard(data);
-      });
-
-  };
 
   useEffect(() => {
     loadDashboard();
+
+    const savedFavorites = localStorage.getItem("favorites");
+
+    if (savedFavorites) {
+      setFavorites(JSON.parse(savedFavorites));
+    }
   }, []);
 
-  const createCar = async () => {
+  useEffect(() => {
+    localStorage.setItem("favorites", JSON.stringify(favorites));
+  }, [favorites]);
 
-    await fetch("http://127.0.0.1:8000/cars/", {
-
-      method: "POST",
-
-      headers: {
-        "Content-Type": "application/json"
-      },
-
-      body: JSON.stringify({
-        ...newCar,
-        year: Number(newCar.year),
-        km: Number(newCar.km),
-        price: Number(newCar.price)
-      })
-
-    });
-
-    setNewCar({
-      brand: "",
-      model: "",
-      year: "",
-      km: "",
-      price: ""
-    });
-
-    loadDashboard();
+  const loadDashboard = () => {
+    fetch(`${API_URL}/cars/dashboard`)
+      .then((res) => res.json())
+      .then((data) => setDashboard(data));
   };
 
-  const importMobileCars = async () => {
+  const toggleFavorite = (carId) => {
+    if (favorites.includes(carId)) {
+      setFavorites(favorites.filter((id) => id !== carId));
+    } else {
+      setFavorites([...favorites, carId]);
+    }
+  };
 
-    setLoadingImport(true);
-
-    await fetch(
-      "http://127.0.0.1:8000/cars/import-mobile",
-      {
-        method: "POST"
-      }
-    );
+  const deleteCar = async (carId) => {
+    await fetch(`${API_URL}/cars/${carId}`, {
+      method: "DELETE",
+    });
 
     loadDashboard();
-
-    setLoadingImport(false);
   };
 
   if (!dashboard) {
-
-    return (
-      <div style={loadingStyle}>
-        Cargando dashboard...
-      </div>
-    );
+    return <div style={loadingStyle}>Cargando dashboard...</div>;
   }
 
-  let filteredDeals = dashboard.top_deals.filter((car) => {
+  let cars = dashboard.top_deals || [];
 
-    const text = (
-      car.brand +
-      " " +
-      car.model
-    ).toLowerCase();
-
+  cars = cars.filter((car) => {
+    const text = `${car.brand} ${car.model}`.toLowerCase();
     return text.includes(search.toLowerCase());
-
   });
 
-  if (onlyHotDeals) {
-
-    filteredDeals = filteredDeals.filter(
-      (car) => car.is_hot_deal
-    );
-  }
-
-  filteredDeals.sort((a, b) => {
-
+  cars = [...cars].sort((a, b) => {
     if (sortBy === "score") {
       return b.score - a.score;
     }
 
     if (sortBy === "profit") {
-      return (
-        b.estimated_net_profit -
-        a.estimated_net_profit
-      );
+      return b.estimated_net_profit - a.estimated_net_profit;
     }
 
     if (sortBy === "price") {
@@ -126,225 +69,283 @@ function App() {
     }
 
     return 0;
-
   });
 
   return (
-
     <div style={layoutStyle}>
-
       <aside style={sidebarStyle}>
+        <h1 style={logoStyle}>🚗 Coches SaaS</h1>
 
-        <h1 style={logoStyle}>
-          🚗 Coches SaaS
-        </h1>
-
-        <button style={menuButtonStyle}>
-          Dashboard
-        </button>
+        <button style={menuButtonStyle}>Dashboard</button>
 
         <button style={menuButtonStyle}>
-          Top Deals
+          Favoritos: {favorites.length}
         </button>
 
-        <button style={menuButtonStyle}>
-          Hot Deals
+        <button onClick={() => setFavorites([])} style={menuButtonStyle}>
+          Reset favoritos
         </button>
-
       </aside>
 
       <main style={contentStyle}>
+        <h1 style={titleStyle}>🔥 Marketplace Premium</h1>
 
-        <h1 style={titleStyle}>
-          🔥 Marketplace Dashboard
-        </h1>
+        <section style={statsGridStyle}>
+          <div style={statsCardStyle}>
+            <p>Total coches</p>
+            <h2>{dashboard.stats.total_cars}</h2>
+          </div>
 
-        <div style={topActionsStyle}>
+          <div style={statsCardStyle}>
+            <p>Score medio</p>
+            <h2>{dashboard.stats.avg_score}</h2>
+          </div>
 
-          <button
-            onClick={importMobileCars}
-            style={importButtonStyle}
+          <div style={statsCardStyle}>
+            <p>Hot Deals</p>
+            <h2>{dashboard.stats.hot_deals_count}</h2>
+          </div>
+
+          <div style={statsCardStyle}>
+            <p>Favoritos</p>
+            <h2>{favorites.length}</h2>
+          </div>
+        </section>
+
+        <section style={filtersStyle}>
+          <input
+            placeholder="Buscar BMW, Audi, Mercedes..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            style={searchStyle}
+          />
+
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
+            style={selectStyle}
           >
-            {loadingImport
-              ? "Importando..."
-              : "📥 Importar Mobile.de"}
-          </button>
+            <option value="score">Mejor score</option>
+            <option value="profit">Mayor beneficio</option>
+            <option value="price">Precio más alto</option>
+          </select>
+        </section>
 
-        </div>
+        <section style={cardsGridStyle}>
+          {cars.map((car) => {
+            const isFavorite = favorites.includes(car.id);
 
-        <div style={formCardStyle}>
+            return (
+              <div
+                key={car.id}
+                style={{
+                  ...cardStyle,
+                  border: isFavorite
+                    ? "2px solid #ef4444"
+                    : "1px solid #334155",
+                }}
+              >
+                <img
+                  src={car.image_url}
+                  alt={car.brand}
+                  style={imageStyle}
+                />
 
-          <h2>Añadir coche</h2>
+                <h2>
+                  {car.brand} {car.model}
+                </h2>
 
-          <input
-            placeholder="Marca"
-            value={newCar.brand}
-            onChange={(e) =>
-              setNewCar({
-                ...newCar,
-                brand: e.target.value
-              })
-            }
-            style={inputStyle}
-          />
+                <p>📅 Año: {car.year}</p>
+                <p>🛣️ KM: {car.km}</p>
+                <p>💰 Precio: {car.price}€</p>
+                <p>📈 Score: {car.score}</p>
+                <p>💵 Beneficio: {car.estimated_net_profit}€</p>
+                <p>🏷️ {car.label}</p>
 
-          <input
-            placeholder="Modelo"
-            value={newCar.model}
-            onChange={(e) =>
-              setNewCar({
-                ...newCar,
-                model: e.target.value
-              })
-            }
-            style={inputStyle}
-          />
+                {car.is_hot_deal && (
+                  <div style={hotBadgeStyle}>🔥 HOT DEAL</div>
+                )}
 
-          <input
-            placeholder="Año"
-            value={newCar.year}
-            onChange={(e) =>
-              setNewCar({
-                ...newCar,
-                year: e.target.value
-              })
-            }
-            style={inputStyle}
-          />
+                {car.is_premium_brand && (
+                  <div style={premiumBadgeStyle}>⭐ PREMIUM</div>
+                )}
 
-          <input
-            placeholder="KM"
-            value={newCar.km}
-            onChange={(e) =>
-              setNewCar({
-                ...newCar,
-                km: e.target.value
-              })
-            }
-            style={inputStyle}
-          />
+                <button
+                  onClick={() => toggleFavorite(car.id)}
+                  style={favoriteButtonStyle}
+                >
+                  {isFavorite ? "Guardado" : "Favorito"}
+                </button>
 
-          <input
-            placeholder="Precio"
-            value={newCar.price}
-            onChange={(e) =>
-              setNewCar({
-                ...newCar,
-                price: e.target.value
-              })
-            }
-            style={inputStyle}
-          />
-
-          <button
-            onClick={createCar}
-            style={createButtonStyle}
-          >
-            ➕ Crear coche
-          </button>
-
-        </div>
-
+                <button
+                  onClick={() => deleteCar(car.id)}
+                  style={deleteButtonStyle}
+                >
+                  Eliminar
+                </button>
+              </div>
+            );
+          })}
+        </section>
       </main>
-
     </div>
-
   );
 }
 
 const layoutStyle = {
   display: "flex",
   minHeight: "100vh",
-  background: "#0f172a",
+  background: "#020617",
   color: "white",
-  fontFamily: "Arial"
+  fontFamily: "Arial",
 };
 
 const sidebarStyle = {
-  width: "250px",
-  background: "#111827",
+  width: "260px",
+  background: "#0f172a",
   padding: "25px",
-  borderRight: "1px solid #1e293b"
+  borderRight: "1px solid #1e293b",
 };
 
 const logoStyle = {
-  fontSize: "28px",
-  marginBottom: "25px"
+  fontSize: "30px",
+  marginBottom: "25px",
 };
 
 const menuButtonStyle = {
   width: "100%",
-  padding: "14px",
-  marginBottom: "12px",
-  borderRadius: "12px",
+  padding: "15px",
+  borderRadius: "14px",
   border: "none",
   background: "#1e293b",
   color: "white",
+  marginBottom: "12px",
+  cursor: "pointer",
   fontSize: "16px",
-  cursor: "pointer"
 };
 
 const contentStyle = {
   flex: 1,
-  padding: "40px"
+  padding: "40px",
 };
 
 const titleStyle = {
   fontSize: "42px",
-  marginBottom: "30px"
+  marginBottom: "30px",
 };
 
-const topActionsStyle = {
-  marginBottom: "25px"
+const statsGridStyle = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))",
+  gap: "20px",
+  marginBottom: "30px",
 };
 
-const importButtonStyle = {
-  padding: "18px 24px",
-  borderRadius: "14px",
-  border: "none",
-  background: "gold",
-  color: "black",
-  fontWeight: "bold",
-  fontSize: "18px",
-  cursor: "pointer"
-};
-
-const formCardStyle = {
+const statsCardStyle = {
   background: "#1e293b",
   padding: "25px",
-  borderRadius: "20px",
-  display: "grid",
-  gap: "15px"
+  borderRadius: "22px",
 };
 
-const inputStyle = {
+const filtersStyle = {
+  display: "flex",
+  gap: "15px",
+  flexWrap: "wrap",
+  marginBottom: "30px",
+};
+
+const searchStyle = {
+  flex: 1,
+  minWidth: "280px",
   padding: "16px",
-  borderRadius: "12px",
+  borderRadius: "14px",
   border: "1px solid #334155",
-  background: "#0f172a",
+  background: "#1e293b",
   color: "white",
-  fontSize: "16px"
 };
 
-const createButtonStyle = {
+const selectStyle = {
   padding: "16px",
-  borderRadius: "12px",
+  borderRadius: "14px",
+  border: "1px solid #334155",
+  background: "#1e293b",
+  color: "white",
+};
+
+const cardsGridStyle = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit,minmax(320px,1fr))",
+  gap: "25px",
+};
+
+const cardStyle = {
+  background: "#1e293b",
+  borderRadius: "24px",
+  padding: "24px",
+  boxShadow: "0 10px 30px rgba(0,0,0,0.35)",
+};
+
+const imageStyle = {
+  width: "100%",
+  height: "220px",
+  objectFit: "cover",
+  borderRadius: "16px",
+  marginBottom: "18px",
+};
+
+const hotBadgeStyle = {
+  background: "gold",
+  color: "black",
+  padding: "8px 12px",
+  borderRadius: "10px",
+  display: "inline-block",
+  fontWeight: "bold",
+  marginRight: "8px",
+  marginBottom: "12px",
+};
+
+const premiumBadgeStyle = {
+  background: "#334155",
+  color: "white",
+  padding: "8px 12px",
+  borderRadius: "10px",
+  display: "inline-block",
+  fontWeight: "bold",
+  marginBottom: "12px",
+};
+
+const favoriteButtonStyle = {
+  marginTop: "15px",
+  width: "100%",
+  padding: "14px",
+  borderRadius: "14px",
   border: "none",
-  background: "#22c55e",
+  background: "#ef4444",
   color: "white",
   fontWeight: "bold",
-  fontSize: "18px",
-  cursor: "pointer"
+  cursor: "pointer",
+};
+
+const deleteButtonStyle = {
+  marginTop: "10px",
+  width: "100%",
+  padding: "14px",
+  borderRadius: "14px",
+  border: "none",
+  background: "#334155",
+  color: "white",
+  fontWeight: "bold",
+  cursor: "pointer",
 };
 
 const loadingStyle = {
-  background: "#0f172a",
+  background: "#020617",
   minHeight: "100vh",
   color: "white",
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
-  fontSize: "30px"
+  fontSize: "30px",
 };
 
 export default App;

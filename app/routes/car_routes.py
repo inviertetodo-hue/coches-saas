@@ -71,6 +71,10 @@ def get_deals(
 
     only_good: bool = Query(default=False),
 
+    page: int = Query(default=1),
+
+    limit: int = Query(default=10),
+
     db: Session = Depends(get_db)
 ):
 
@@ -109,7 +113,13 @@ def get_deals(
     if max_km is not None:
         query = query.filter(Car.km <= max_km)
 
-    cars = query.all()
+    # -------------------------
+    # PAGINACION
+    # -------------------------
+
+    offset = (page - 1) * limit
+
+    cars = query.offset(offset).limit(limit).all()
 
     analyzed_cars = []
 
@@ -128,7 +138,9 @@ def get_deals(
     )
 
     return {
-        "total": len(analyzed_cars),
+        "page": page,
+        "limit": limit,
+        "total_results": len(analyzed_cars),
         "filters": {
             "search": search,
             "brand": brand,

@@ -65,12 +65,24 @@ def estimate_net_profit(margin, expenses):
     return round(margin - expenses, 2)
 
 
-def score_deal(margin, price):
+def score_deal(car, margin, price):
 
     if price <= 0:
         return 0
 
     score = (margin / price) * 100
+
+    # bonus premium
+    if is_premium_brand(car.brand):
+        score += 5
+
+    # bonus coche moderno
+    if car.year >= 2020:
+        score += 3
+
+    # penalizacion km altos
+    if car.km > 200000:
+        score -= 5
 
     if score < 0:
         return 0
@@ -82,6 +94,9 @@ def score_deal(margin, price):
 
 
 def get_deal_label(score):
+
+    if score >= 30:
+        return "CHOLLO PREMIUM"
 
     if score >= 25:
         return "CHOLLO"
@@ -97,13 +112,13 @@ def get_deal_label(score):
 
 def get_buy_recommendation(score, net_profit):
 
-    if score >= 25 and net_profit > 3000:
+    if score >= 30 and net_profit > 4000:
         return "COMPRAR YA"
 
-    if score >= 15 and net_profit > 1500:
+    if score >= 20 and net_profit > 2000:
         return "MUY INTERESANTE"
 
-    if score >= 5:
+    if score >= 10:
         return "REVISAR"
 
     return "DESCARTAR"
@@ -147,6 +162,7 @@ def analyze_car_deal(car):
     )
 
     score = score_deal(
+        car,
         margin,
         car.price
     )

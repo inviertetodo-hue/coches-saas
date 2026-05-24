@@ -1,25 +1,34 @@
 import { useEffect, useState } from "react";
 
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
+
 const API_URL = "http://127.0.0.1:8000";
 
 function App() {
   const [logged, setLogged] = useState(false);
-  const [password, setPassword] = useState("");
-  const [dashboard, setDashboard] = useState(null);
-  const [favorites, setFavorites] = useState([]);
-  const [search, setSearch] = useState("");
-  const [aiLoading, setAiLoading] = useState(null);
-  const [aiResponses, setAiResponses] = useState({});
+
+  const [password, setPassword] =
+    useState("");
+
+  const [dashboard, setDashboard] =
+    useState(null);
+
+  const [search, setSearch] =
+    useState("");
 
   useEffect(() => {
-    if (localStorage.getItem("logged") === "true") {
+    if (
+      localStorage.getItem("logged") ===
+      "true"
+    ) {
       setLogged(true);
-    }
-
-    const saved = localStorage.getItem("favorites");
-
-    if (saved) {
-      setFavorites(JSON.parse(saved));
     }
   }, []);
 
@@ -31,72 +40,45 @@ function App() {
 
   const login = () => {
     if (password === "admin123") {
-      localStorage.setItem("logged", "true");
+      localStorage.setItem(
+        "logged",
+        "true"
+      );
+
       setLogged(true);
-    } else {
-      alert("Password incorrecta");
     }
   };
 
   const logout = () => {
     localStorage.removeItem("logged");
+
     setLogged(false);
   };
 
   const loadDashboard = () => {
     fetch(`${API_URL}/cars/dashboard`)
       .then((res) => res.json())
-      .then((data) => setDashboard(data));
-  };
-
-  const analyzeAI = async (id) => {
-    setAiLoading(id);
-
-    const res = await fetch(
-      `${API_URL}/cars/${id}/ai`
-    );
-
-    const data = await res.json();
-
-    setAiResponses((prev) => ({
-      ...prev,
-      [id]: data.analysis,
-    }));
-
-    setAiLoading(null);
-  };
-
-  const toggleFavorite = (id) => {
-    if (favorites.includes(id)) {
-      setFavorites(
-        favorites.filter((fav) => fav !== id)
+      .then((data) =>
+        setDashboard(data)
       );
-    } else {
-      setFavorites([...favorites, id]);
-    }
-
-    localStorage.setItem(
-      "favorites",
-      JSON.stringify(
-        favorites.includes(id)
-          ? favorites.filter((fav) => fav !== id)
-          : [...favorites, id]
-      )
-    );
   };
 
   if (!logged) {
     return (
       <div style={loginPageStyle}>
         <div style={loginCardStyle}>
-          <h1>🚗 Auto Intelligence</h1>
+          <h1>
+            🚗 Auto Intelligence
+          </h1>
 
           <input
             type="password"
             placeholder="Password"
             value={password}
             onChange={(e) =>
-              setPassword(e.target.value)
+              setPassword(
+                e.target.value
+              )
             }
             style={loginInputStyle}
           />
@@ -120,7 +102,8 @@ function App() {
     );
   }
 
-  let cars = dashboard.top_deals || [];
+  let cars =
+    dashboard.top_deals || [];
 
   cars = cars.filter((car) => {
     const text =
@@ -130,6 +113,18 @@ function App() {
       search.toLowerCase()
     );
   });
+
+  const chartData = cars.map(
+    (car) => ({
+      name:
+        car.brand +
+        " " +
+        car.model,
+      profit:
+        car.estimated_net_profit,
+      score: car.score,
+    })
+  );
 
   return (
     <div style={appStyle}>
@@ -150,11 +145,11 @@ function App() {
         <div style={topBarStyle}>
           <div>
             <h1 style={titleStyle}>
-              AI Marketplace
+              Charts Dashboard
             </h1>
 
             <p style={subtitleStyle}>
-              Inteligencia artificial para compraventa
+              AI Automotive Analytics
             </p>
           </div>
         </div>
@@ -163,95 +158,82 @@ function App() {
           placeholder="Buscar..."
           value={search}
           onChange={(e) =>
-            setSearch(e.target.value)
+            setSearch(
+              e.target.value
+            )
           }
           style={searchStyle}
         />
 
+        <div style={chartCardStyle}>
+          <h2>
+            💰 Profit Analytics
+          </h2>
+
+          <div
+            style={{
+              width: "100%",
+              height: 400,
+            }}
+          >
+            <ResponsiveContainer>
+              <BarChart data={chartData}>
+                <XAxis dataKey="name" />
+
+                <YAxis />
+
+                <Tooltip />
+
+                <Bar dataKey="profit" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
         <section style={gridStyle}>
-          {cars.map((car) => {
-            const favorite =
-              favorites.includes(car.id);
+          {cars.map((car) => (
+            <div
+              key={car.id}
+              style={cardStyle}
+            >
+              <img
+                src={car.image_url}
+                alt=""
+                style={imageStyle}
+              />
 
-            return (
+              <h2>
+                {car.brand}{" "}
+                {car.model}
+              </h2>
+
+              <p>
+                💰 Profit:
+                {" "}
+                {
+                  car.estimated_net_profit
+                }
+                €
+              </p>
+
+              <p>
+                📈 Score:
+                {" "}
+                {car.score}
+              </p>
+
               <div
-                key={car.id}
-                style={{
-                  ...cardStyle,
-                  border: favorite
-                    ? "2px solid red"
-                    : car.is_hot_deal
-                    ? "2px solid gold"
-                    : "1px solid rgba(255,255,255,0.08)",
-                }}
+                style={
+                  recommendationStyle
+                }
               >
-                <img
-                  src={car.image_url}
-                  alt={car.brand}
-                  style={imageStyle}
-                />
-
-                <h2>
-                  {car.brand} {car.model}
-                </h2>
-
-                <p>
-                  💰 Profit:
-                  {" "}
-                  {car.estimated_net_profit}€
-                </p>
-
-                <p>
-                  📈 Score:
-                  {" "}
-                  {car.score}
-                </p>
-
-                <button
-                  onClick={() =>
-                    toggleFavorite(car.id)
-                  }
-                  style={{
-                    ...favoriteButtonStyle,
-                    background: favorite
-                      ? "#dc2626"
-                      : "#ef4444",
-                  }}
-                >
-                  {favorite
-                    ? "❤️ Guardado"
-                    : "🤍 Favorito"}
-                </button>
-
-                <button
-                  onClick={() =>
-                    analyzeAI(car.id)
-                  }
-                  style={aiButtonStyle}
-                >
-                  {aiLoading === car.id
-                    ? "Analizando..."
-                    : "🧠 Analizar IA"}
-                </button>
-
-                {aiResponses[car.id] && (
-                  <div style={aiBoxStyle}>
-                    <strong>
-                      GPT Analysis
-                    </strong>
-
-                    <p>
-                      {
-                        aiResponses[
-                          car.id
-                        ]
-                      }
-                    </p>
-                  </div>
-                )}
+                🧠{" "}
+                {
+                  car.recommendation
+                }
               </div>
-            );
-          })}
+            </div>
+          ))}
         </section>
       </main>
     </div>
@@ -314,6 +296,14 @@ const searchStyle = {
   marginBottom: "30px",
 };
 
+const chartCardStyle = {
+  background:
+    "rgba(30,41,59,0.8)",
+  padding: "30px",
+  borderRadius: "28px",
+  marginBottom: "35px",
+};
+
 const gridStyle = {
   display: "grid",
   gridTemplateColumns:
@@ -335,35 +325,12 @@ const imageStyle = {
   marginBottom: "15px",
 };
 
-const favoriteButtonStyle = {
-  width: "100%",
-  marginTop: "16px",
-  padding: "14px",
-  borderRadius: "14px",
-  border: "none",
-  color: "white",
-  cursor: "pointer",
-};
-
-const aiButtonStyle = {
-  width: "100%",
-  marginTop: "10px",
-  padding: "14px",
-  borderRadius: "14px",
-  border: "none",
+const recommendationStyle = {
   background:
-    "linear-gradient(135deg,#2563eb,#7c3aed)",
-  color: "white",
-  cursor: "pointer",
-  fontWeight: "bold",
-};
-
-const aiBoxStyle = {
-  marginTop: "16px",
-  background: "#0f172a",
-  padding: "18px",
-  borderRadius: "16px",
-  border: "1px solid #334155",
+    "linear-gradient(135deg,#1d4ed8,#2563eb)",
+  padding: "16px",
+  borderRadius: "14px",
+  marginTop: "18px",
 };
 
 const loginPageStyle = {

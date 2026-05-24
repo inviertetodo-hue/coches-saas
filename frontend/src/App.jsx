@@ -149,7 +149,7 @@ function App() {
             </h1>
 
             <p style={subtitleStyle}>
-              AI Automotive Analytics
+              AI Automotive Analytics Online
             </p>
           </div>
         </div>

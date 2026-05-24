@@ -12,6 +12,9 @@ function App() {
   const [search, setSearch] =
     useState("");
 
+  const [loadingImport, setLoadingImport] =
+    useState(false);
+
   useEffect(() => {
     loadDashboard();
 
@@ -38,6 +41,32 @@ function App() {
       .then((data) =>
         setDashboard(data)
       );
+  };
+
+  const importMobile = async () => {
+    setLoadingImport(true);
+
+    await fetch(
+      `${API_URL}/cars/import-mobile`,
+      {
+        method: "POST",
+      }
+    );
+
+    loadDashboard();
+
+    setLoadingImport(false);
+  };
+
+  const deleteCar = async (id) => {
+    await fetch(
+      `${API_URL}/cars/${id}`,
+      {
+        method: "DELETE",
+      }
+    );
+
+    loadDashboard();
   };
 
   const toggleFavorite = (id) => {
@@ -109,14 +138,27 @@ function App() {
       </aside>
 
       <main style={contentStyle}>
-        <h1 style={titleStyle}>
-          Marketplace Dashboard
-        </h1>
+        <div style={topBarStyle}>
+          <div>
+            <h1 style={titleStyle}>
+              Marketplace Dashboard
+            </h1>
 
-        <p style={subtitleStyle}>
-          Inteligencia profesional
-          para compra y reventa
-        </p>
+            <p style={subtitleStyle}>
+              Inteligencia profesional
+              para compra y reventa
+            </p>
+          </div>
+
+          <button
+            onClick={importMobile}
+            style={importButtonStyle}
+          >
+            {loadingImport
+              ? "Importando..."
+              : "📥 Importar"}
+          </button>
+        </div>
 
         <input
           placeholder="Buscar BMW, Audi..."
@@ -192,6 +234,8 @@ function App() {
                   border:
                     favorite
                       ? "2px solid red"
+                      : car.is_hot_deal
+                      ? "2px solid gold"
                       : "1px solid rgba(255,255,255,0.08)",
                 }}
               >
@@ -276,6 +320,17 @@ function App() {
                     ? "❤️ Guardado"
                     : "🤍 Favorito"}
                 </button>
+
+                <button
+                  onClick={() =>
+                    deleteCar(
+                      car.id
+                    )
+                  }
+                  style={deleteButtonStyle}
+                >
+                  🗑️ Eliminar
+                </button>
               </div>
             );
           })}
@@ -325,13 +380,31 @@ const contentStyle = {
   padding: "40px",
 };
 
+const topBarStyle = {
+  display: "flex",
+  justifyContent:
+    "space-between",
+  alignItems: "center",
+  marginBottom: "25px",
+};
+
 const titleStyle = {
   fontSize: "56px",
 };
 
 const subtitleStyle = {
   color: "#94a3b8",
-  marginBottom: "25px",
+};
+
+const importButtonStyle = {
+  padding: "16px 22px",
+  borderRadius: "16px",
+  border: "none",
+  background:
+    "linear-gradient(135deg,gold,#f59e0b)",
+  color: "black",
+  fontWeight: "bold",
+  cursor: "pointer",
 };
 
 const searchStyle = {
@@ -409,6 +482,17 @@ const favoriteButtonStyle = {
   padding: "14px",
   borderRadius: "14px",
   border: "none",
+  color: "white",
+  cursor: "pointer",
+};
+
+const deleteButtonStyle = {
+  width: "100%",
+  marginTop: "10px",
+  padding: "14px",
+  borderRadius: "14px",
+  border: "none",
+  background: "#334155",
   color: "white",
   cursor: "pointer",
 };

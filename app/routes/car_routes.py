@@ -71,6 +71,8 @@ def get_deals(
 
     only_good: bool = Query(default=False),
 
+    sort_by: str = Query(default="score"),
+
     page: int = Query(default=1),
 
     limit: int = Query(default=10),
@@ -132,15 +134,37 @@ def get_deals(
 
         analyzed_cars.append(analyzed)
 
-    analyzed_cars.sort(
-        key=lambda x: x["score"],
-        reverse=True
-    )
+    # -------------------------
+    # ORDENACION
+    # -------------------------
+
+    if sort_by == "score":
+        analyzed_cars.sort(
+            key=lambda x: x["score"],
+            reverse=True
+        )
+
+    elif sort_by == "price":
+        analyzed_cars.sort(
+            key=lambda x: x["price"]
+        )
+
+    elif sort_by == "year":
+        analyzed_cars.sort(
+            key=lambda x: x["year"],
+            reverse=True
+        )
+
+    elif sort_by == "km":
+        analyzed_cars.sort(
+            key=lambda x: x["km"]
+        )
 
     return {
         "page": page,
         "limit": limit,
         "total_results": len(analyzed_cars),
+        "sort_by": sort_by,
         "filters": {
             "search": search,
             "brand": brand,

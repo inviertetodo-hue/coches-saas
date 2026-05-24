@@ -51,6 +51,64 @@ def list_cars(
 
 
 # -------------------------
+# ESTADISTICAS
+# -------------------------
+
+@router.get("/stats")
+def get_stats(
+    db: Session = Depends(get_db)
+):
+
+    cars = db.query(Car).all()
+
+    analyzed_cars = []
+
+    for car in cars:
+        analyzed_cars.append(
+            analyze_car_deal(car)
+        )
+
+    total_cars = len(analyzed_cars)
+
+    avg_price = 0
+    avg_score = 0
+    total_chollos = 0
+    total_risk = 0
+
+    if total_cars > 0:
+
+        avg_price = round(
+            sum(car["price"] for car in analyzed_cars) / 
+total_cars,
+            2
+        )
+
+        avg_score = round(
+            sum(car["score"] for car in analyzed_cars) / 
+total_cars,
+            2
+        )
+
+        total_chollos = len([
+            car for car in analyzed_cars
+            if car["label"] == "CHOLLO"
+        ])
+
+        total_risk = len([
+            car for car in analyzed_cars
+            if len(car["risk_flags"]) > 0
+        ])
+
+    return {
+        "total_cars": total_cars,
+        "avg_price": avg_price,
+        "avg_score": avg_score,
+        "total_chollos": total_chollos,
+        "total_with_risk": total_risk
+    }
+
+
+# -------------------------
 # RANKING CHOLLOS
 # -------------------------
 
@@ -82,9 +140,7 @@ def get_deals(
 
     query = db.query(Car)
 
-    # -------------------------
     # SEARCH
-    # -------------------------
 
     if search:
 
@@ -96,9 +152,7 @@ def get_deals(
             )
         )
 
-    # -------------------------
     # FILTROS
-    # -------------------------
 
     if brand:
         query = query.filter(Car.brand.ilike(f"%{brand}%"))
@@ -115,9 +169,7 @@ def get_deals(
     if max_km is not None:
         query = query.filter(Car.km <= max_km)
 
-    # -------------------------
     # PAGINACION
-    # -------------------------
 
     offset = (page - 1) * limit
 
@@ -134,28 +186,30 @@ def get_deals(
 
         analyzed_cars.append(analyzed)
 
-    # -------------------------
     # ORDENACION
-    # -------------------------
 
     if sort_by == "score":
+
         analyzed_cars.sort(
             key=lambda x: x["score"],
             reverse=True
         )
 
     elif sort_by == "price":
+
         analyzed_cars.sort(
             key=lambda x: x["price"]
         )
 
     elif sort_by == "year":
+
         analyzed_cars.sort(
             key=lambda x: x["year"],
             reverse=True
         )
 
     elif sort_by == "km":
+
         analyzed_cars.sort(
             key=lambda x: x["km"]
         )

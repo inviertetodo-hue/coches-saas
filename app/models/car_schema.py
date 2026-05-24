@@ -6,4 +6,5 @@ class CarCreate(BaseModel):
     model: str
     year: int
     km: int
+    price: float
 

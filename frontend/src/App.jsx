@@ -4,6 +4,10 @@ function App() {
 
   const [dashboard, setDashboard] = useState(null);
 
+  const [search, setSearch] = useState("");
+
+  const [onlyHotDeals, setOnlyHotDeals] = useState(false);
+
   useEffect(() => {
 
     fetch("http://127.0.0.1:8000/cars/dashboard")
@@ -33,6 +37,25 @@ function App() {
     );
   }
 
+  let filteredDeals = dashboard.top_deals.filter((car) => {
+
+    const text = (
+      car.brand +
+      " " +
+      car.model
+    ).toLowerCase();
+
+    return text.includes(search.toLowerCase());
+
+  });
+
+  if (onlyHotDeals) {
+
+    filteredDeals = filteredDeals.filter(
+      (car) => car.is_hot_deal
+    );
+  }
+
   return (
 
     <div
@@ -54,6 +77,48 @@ function App() {
       >
         🚗 Coches SaaS
       </h1>
+
+      {/* BUSCADOR */}
+
+      <input
+        type="text"
+        placeholder="Buscar BMW, Audi..."
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        style={{
+          width: "100%",
+          padding: "18px",
+          borderRadius: "14px",
+          border: "1px solid #334155",
+          background: "#1e293b",
+          color: "white",
+          fontSize: "18px",
+          marginBottom: "20px"
+        }}
+      />
+
+      {/* FILTRO HOT DEALS */}
+
+      <button
+        onClick={() => setOnlyHotDeals(!onlyHotDeals)}
+        style={{
+          padding: "14px 20px",
+          borderRadius: "12px",
+          border: "none",
+          background: onlyHotDeals
+            ? "gold"
+            : "#1e293b",
+          color: onlyHotDeals
+            ? "black"
+            : "white",
+          fontWeight: "bold",
+          fontSize: "16px",
+          cursor: "pointer",
+          marginBottom: "40px"
+        }}
+      >
+        🔥 Solo HOT DEALS
+      </button>
 
       {/* STATS */}
 
@@ -108,7 +173,7 @@ function App() {
         }}
       >
 
-        {dashboard.top_deals.map((car) => (
+        {filteredDeals.map((car) => (
 
           <div
             key={car.id}

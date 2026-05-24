@@ -228,3 +228,24 @@ def clear_all(db: Session = Depends(get_db)):
     db.commit()
 
     return {"message": "Base de datos limpiada"}
+
+from app.services.ai_service import analyze_car_with_ai
+
+
+@router.get("/{car_id}/ai")
+def ai_car_analysis(car_id: int, db: Session = Depends(get_db)):
+    car = db.query(Car).filter(Car.id == car_id).first()
+
+    if not car:
+        return {
+            "analysis": "Coche no encontrado"
+        }
+
+    analyzed = analyze(car)
+
+    ai_text = analyze_car_with_ai(analyzed)
+
+    return {
+        "car_id": car_id,
+        "analysis": ai_text
+    }

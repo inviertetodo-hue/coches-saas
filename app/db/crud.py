@@ -34,7 +34,7 @@ def create_user(
 ):
     user = User(
         email=email,
-        hashed_password=hashed_password
+        password=hashed_password
     )
 
     db.add(user)

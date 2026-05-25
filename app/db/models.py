@@ -5,7 +5,6 @@ class Car(Base):
     __tablename__ = "cars"
 
     id = Column(Integer, primary_key=True, index=True)
-
     brand = Column(String)
     model = Column(String)
     year = Column(Integer)
@@ -35,4 +34,4 @@ class User(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     email = Column(String, unique=True)
-    hashed_password = Column(String)
+    password = Column(String)

@@ -15,7 +15,10 @@ export default function App() {
   const [onlyDeals, setOnlyDeals] = useState(false)
   const [sortBy, setSortBy] = useState("roi")
   const [favorites, setFavorites] = useState([])
+  const [leadEmail, setLeadEmail] = useState("")
+  const [leads, setLeads] = useState([])
   const [watchlist, setWatchlist] = useState([])
+  const [globalSearch, setGlobalSearch] = useState("")
 
   const loadCars = async () => {
     const res = await fetch(`${API_URL}/cars/dashboard`)
@@ -81,6 +84,22 @@ export default function App() {
     )
   }
 
+
+  const addLead = () => {
+    if (!leadEmail) return
+
+    setLeads(prev => [
+      {
+        email: leadEmail,
+        time: new Date().toLocaleTimeString()
+      },
+      ...prev
+    ])
+
+    setLeadEmail("")
+    alert("Lead guardado en demo")
+  }
+
   const toggleFavorite = (id) => {
     setFavorites((prev) =>
       prev.includes(id)
@@ -136,6 +155,10 @@ ${cars.some(c => (c.roi || 0) >= 20) ? "Priorizar operaciones con ROI superior a
   }
 
   const filteredCars = useMemo(() => {
+
+    const search = globalSearch.toLowerCase()
+
+
     let result = [...cars]
 
     if (search) {
@@ -184,6 +207,35 @@ ${cars.some(c => (c.roi || 0) >= 20) ? "Priorizar operaciones con ROI superior a
       </aside>
 
       <main className="main">
+        
+        <section className="ticker-wrap">
+
+          <div className="ticker">
+
+            {[...cars, ...cars].map((car, index) => (
+
+              <div
+                key={index}
+                className={
+                  (car.roi || 0) >= 20
+                    ? "ticker-item ticker-green"
+                    : (car.roi || 0) >= 10
+                    ? "ticker-item ticker-yellow"
+                    : "ticker-item ticker-red"
+                }
+              >
+                🚘 {car.brand} {car.model}
+                • ROI {car.roi}%
+                • Profit {car.estimated_net_profit} €
+              </div>
+
+            ))}
+
+          </div>
+
+        </section>
+
+
         <section className="hero">
           <div>
             <h1>Motor IA profesional</h1>
@@ -418,6 +470,58 @@ ${cars.some(c => (c.roi || 0) >= 20) ? "Priorizar operaciones con ROI superior a
 
 
         
+        
+        <section className="smart-kpi-center">
+
+          <h2>📊 Smart KPI Command Center</h2>
+
+          <div className="smart-kpi-grid">
+
+            <div className="smart-kpi-card">
+              <span>Margen medio</span>
+              <strong className="smart-kpi-positive">
+                {cars.length
+                  ? Math.round(
+                      cars.reduce((s,c)=>s+(c.estimated_net_profit || 0),0)
+                      / cars.length
+                    )
+                  : 0} €
+              </strong>
+            </div>
+
+            <div className="smart-kpi-card">
+              <span>Score IA medio</span>
+              <strong>
+                {cars.length
+                  ? Math.round(
+                      cars.reduce((s,c)=>s+(c.score || 0),0)
+                      / cars.length
+                    )
+                  : 0}
+              </strong>
+            </div>
+
+            <div className="smart-kpi-card">
+              <span>Coches premium</span>
+              <strong className="smart-kpi-warning">
+                {cars.filter(c =>
+                  ["BMW","Mercedes-Benz","Audi","Porsche"].includes(c.brand)
+                ).length}
+              </strong>
+            </div>
+
+            <div className="smart-kpi-card">
+              <span>Capital monitorizado</span>
+              <strong>
+                {cars.reduce((s,c)=>s+(c.price || 0),0)} €
+              </strong>
+            </div>
+
+          </div>
+
+        </section>
+
+
         <section className="portfolio-manager">
 
           <div className="portfolio-header">
@@ -472,7 +576,169 @@ ${cars.some(c => (c.roi || 0) >= 20) ? "Priorizar operaciones con ROI superior a
         
         
         
-        <section className="launch-readiness">
+        
+        
+        
+        
+        <section className="leads-center">
+
+          <h2>📥 Waitlist / Leads Pro</h2>
+
+          <div className="leads-grid">
+
+            <div className="leads-card">
+              <span>Leads captados</span>
+              <strong>{leads.length}</strong>
+            </div>
+
+            <div className="leads-card">
+              <span>Canal</span>
+              <strong>Demo SaaS</strong>
+            </div>
+
+            <div className="leads-card">
+              <span>Estado</span>
+              <strong>Captación activa</strong>
+            </div>
+
+          </div>
+
+          <div className="leads-row">
+
+            <input
+              placeholder="Email del dealer interesado..."
+              value={leadEmail}
+              onChange={(e) => setLeadEmail(e.target.value)}
+            />
+
+            <button onClick={addLead}>
+              Solicitar acceso
+            </button>
+
+          </div>
+
+        </section>
+
+
+        <section className="sales-demo">
+
+          <h2>🎤 Demo Sales Mode</h2>
+
+          <div className="sales-grid">
+
+            <div className="sales-card">
+              <span>Cliente objetivo</span>
+              <strong>Compraventas / Dealers</strong>
+            </div>
+
+            <div className="sales-card">
+              <span>Problema</span>
+              <strong>Detectar chollos antes que otros</strong>
+            </div>
+
+            <div className="sales-card">
+              <span>Solución</span>
+              <strong>IA + ROI + Scraping</strong>
+            </div>
+
+            <div className="sales-card">
+              <span>Beneficio</span>
+              <strong>Más margen por operación</strong>
+            </div>
+
+          </div>
+
+          <div className="sales-pitch">
+            Coches SaaS ayuda a profesionales de compraventa a encontrar
+            vehículos rentables más rápido, calcular ROI automáticamente,
+            priorizar oportunidades y reducir el tiempo perdido revisando anuncios manualmente.
+          </div>
+
+          <button
+            className="sales-btn"
+            onClick={() => {
+              navigator.clipboard.writeText(
+                "Coches SaaS es una plataforma IA para compraventas que detecta oportunidades, calcula ROI, analiza riesgo y prioriza vehículos con mayor margen."
+              )
+              alert("Pitch comercial copiado")
+            }}
+          >
+            📋 Copiar pitch comercial
+          </button>
+
+        </section>
+\n\n        <section className="revenue-center">
+
+          <h2>💰 AI Revenue Center</h2>
+
+          <div className="revenue-grid">
+
+            <div className="revenue-card">
+              <span>MRR objetivo</span>
+              <strong>10.000€</strong>
+            </div>
+
+            <div className="revenue-card">
+              <span>Dealers necesarios</span>
+              <strong>204</strong>
+            </div>
+
+            <div className="revenue-card">
+              <span>ARR estimado</span>
+              <strong>120.000€</strong>
+            </div>
+
+            <div className="revenue-card">
+              <span>Ticket medio</span>
+              <strong>49€/mes</strong>
+            </div>
+
+          </div>
+
+          <div className="revenue-note">
+            🚀 Con un pricing medio de 49€/mes y captación B2B dealer,
+            el SaaS puede escalar mediante suscripciones recurrentes,
+            scraping premium y alertas IA avanzadas.
+          </div>
+
+        </section>
+
+
+        <section className="system-health">
+
+          <h2>🟢 System Health Center</h2>
+
+          <div className="health-grid">
+
+            <div className="health-card">
+              <span>Backend API</span>
+              <strong className="health-ok">ONLINE</strong>
+            </div>
+
+            <div className="health-card">
+              <span>Database</span>
+              <strong className="health-ok">ACTIVE</strong>
+            </div>
+
+            <div className="health-card">
+              <span>Auth</span>
+              <strong className="health-ok">SECURED</strong>
+            </div>
+
+            <div className="health-card">
+              <span>Scraper</span>
+              <strong className="health-ok">READY</strong>
+            </div>
+
+          </div>
+
+          <div className="health-note">
+            ✅ Sistema preparado para operar como MVP SaaS: autenticación,
+            importador, scoring IA, dashboard, cartera, alertas visuales y exportación.
+          </div>
+
+        </section>
+\n\n        <section className="launch-readiness">
 
           <h2>🚀 Launch Readiness</h2>
 
@@ -746,6 +1012,37 @@ ${cars.some(c => (c.roi || 0) >= 20) ? "Priorizar operaciones con ROI superior a
             <p>Pega una URL de Mobile.de o AutoScout24 para empezar a analizar oportunidades.</p>
           </section>
         )}
+
+        
+        <section className="global-search">
+
+          <h2>🔎 Global Search Command</h2>
+
+          <input
+            className="search-box"
+            placeholder="Buscar BMW, Audi, Mercedes..."
+            value={globalSearch}
+            onChange={(e) => setGlobalSearch(e.target.value)}
+          />
+
+          <div className="search-stats">
+
+            <div className="search-pill">
+              Resultados: {filteredCars.length}
+            </div>
+
+            <div className="search-pill">
+              Watchlist: {watchlist.length}
+            </div>
+
+            <div className="search-pill">
+              Chollos IA: {cars.filter(c => (c.roi || 0) >= 20).length}
+            </div>
+
+          </div>
+
+        </section>
+
 
         <section className="cars-grid">
           {filteredCars.map((car) => {
@@ -1568,6 +1865,45 @@ ${cars.some(c => (c.roi || 0) >= 20) ? "Priorizar operaciones con ROI superior a
                       {[...cars].sort((a,b)=>(b.roi || 0)-(a.roi || 0))[0]?.id === car.id
                         ? "🏆 Mejor oportunidad actual"
                         : "📊 Por debajo del líder"}
+                    </div>
+
+                  </div>
+
+                  <div className="health-panel">
+
+                    <div className="health-title">
+                      🩺 Deal Health Monitor
+                    </div>
+
+                    <div className="health-status">
+                      {(car.score || 0) >= 85
+                        ? "Salud excelente"
+                        : (car.score || 0) >= 65
+                        ? "Salud media"
+                        : "Salud débil"}
+                    </div>
+
+                    <div className="health-bar">
+                      <div
+                        className={
+                          (car.score || 0) >= 85
+                            ? "health-fill health-green"
+                            : (car.score || 0) >= 65
+                            ? "health-fill health-yellow"
+                            : "health-fill health-red"
+                        }
+                        style={{
+                          width: `${Math.min(car.score || 0, 100)}%`
+                        }}
+                      />
+                    </div>
+
+                    <div className="health-note">
+                      {(car.score || 0) >= 85
+                        ? "La IA detecta una operación sólida con buen equilibrio entre precio, margen y riesgo."
+                        : (car.score || 0) >= 65
+                        ? "Operación interesante, pero conviene negociar precio y revisar documentación."
+                        : "Operación débil: no comprar sin una rebaja significativa."}
                     </div>
 
                   </div>

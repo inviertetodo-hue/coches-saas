@@ -2060,3 +2060,471 @@ body{
   font-size:32px;
   font-weight:900;
 }
+
+/* ===== AI ALERT CENTER ===== */
+
+.alert-center{
+  margin:30px 0;
+  background:linear-gradient(135deg,#450a0a,#111827);
+  border-radius:30px;
+  padding:30px;
+  border:1px solid rgba(255,255,255,.1);
+}
+
+.alert-center h2{
+  margin:0 0 22px;
+  font-size:38px;
+}
+
+.alert-feed{
+  display:grid;
+  gap:14px;
+}
+
+.alert-item{
+  background:rgba(255,255,255,.08);
+  border-radius:18px;
+  padding:18px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:20px;
+}
+
+.alert-item.hot{
+  border-left:6px solid #22c55e;
+}
+
+.alert-item.warning{
+  border-left:6px solid #f59e0b;
+}
+
+.alert-item.danger{
+  border-left:6px solid #ef4444;
+}
+
+.alert-badge{
+  padding:10px 16px;
+  border-radius:999px;
+  font-weight:900;
+  color:white;
+}
+
+.alert-badge.green{
+  background:#22c55e;
+}
+
+.alert-badge.orange{
+  background:#f59e0b;
+}
+
+.alert-badge.red{
+  background:#ef4444;
+}
+
+
+/* ===== GLOBAL SEARCH COMMAND ===== */
+
+.global-search{
+  margin:30px 0;
+  background:linear-gradient(135deg,#020617,#1e293b);
+  border-radius:28px;
+  padding:24px;
+  border:1px solid rgba(255,255,255,.08);
+}
+
+.global-search h2{
+  margin:0 0 18px;
+  font-size:34px;
+}
+
+.search-box{
+  width:100%;
+  padding:20px;
+  border:none;
+  border-radius:18px;
+  background:#111827;
+  color:white;
+  font-size:18px;
+  outline:none;
+}
+
+.search-stats{
+  margin-top:16px;
+  display:flex;
+  gap:14px;
+  flex-wrap:wrap;
+}
+
+.search-pill{
+  background:rgba(255,255,255,.08);
+  padding:10px 16px;
+  border-radius:999px;
+  font-weight:800;
+}
+
+
+/* ===== SYSTEM HEALTH CENTER ===== */
+
+.system-health{
+  margin:30px 0;
+  background:linear-gradient(135deg,#020617,#0f766e);
+  border-radius:30px;
+  padding:30px;
+  border:1px solid rgba(255,255,255,.12);
+}
+
+.system-health h2{
+  margin:0 0 22px;
+  font-size:38px;
+}
+
+.health-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+  gap:18px;
+}
+
+.health-card{
+  background:rgba(255,255,255,.08);
+  border-radius:22px;
+  padding:22px;
+}
+
+.health-card span{
+  opacity:.7;
+  font-size:13px;
+}
+
+.health-card strong{
+  display:block;
+  margin-top:8px;
+  font-size:28px;
+}
+
+.health-ok{
+  color:#22c55e;
+}
+
+.health-note{
+  margin-top:22px;
+  background:#020617;
+  border-radius:20px;
+  padding:20px;
+  line-height:1.6;
+}
+
+/* ===== AI REVENUE CENTER ===== */
+
+.revenue-center{
+  margin:30px 0;
+  background:linear-gradient(135deg,#052e16,#1e1b4b);
+  border-radius:30px;
+  padding:30px;
+  border:1px solid rgba(255,255,255,.12);
+}
+
+.revenue-center h2{
+  margin:0 0 22px;
+  font-size:38px;
+}
+
+.revenue-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+  gap:18px;
+}
+
+.revenue-card{
+  background:rgba(255,255,255,.08);
+  border-radius:22px;
+  padding:22px;
+}
+
+.revenue-card span{
+  opacity:.7;
+  font-size:13px;
+}
+
+.revenue-card strong{
+  display:block;
+  margin-top:8px;
+  font-size:30px;
+}
+
+.revenue-note{
+  margin-top:24px;
+  background:#020617;
+  border-radius:20px;
+  padding:20px;
+  line-height:1.6;
+}
+
+/* ===== DEAL HEALTH MONITOR ===== */
+
+.health-panel{
+  margin-top:18px;
+  background:linear-gradient(135deg,#022c22,#020617);
+  border-radius:22px;
+  padding:20px;
+  border:1px solid rgba(255,255,255,.1);
+}
+
+.health-title{
+  font-size:20px;
+  font-weight:900;
+  color:#6ee7b7;
+  margin-bottom:14px;
+}
+
+.health-bar{
+  width:100%;
+  height:16px;
+  background:#111827;
+  border-radius:999px;
+  overflow:hidden;
+  margin:14px 0;
+}
+
+.health-fill{
+  height:100%;
+  border-radius:999px;
+}
+
+.health-green{
+  background:#22c55e;
+}
+
+.health-yellow{
+  background:#eab308;
+}
+
+.health-red{
+  background:#ef4444;
+}
+
+.health-status{
+  font-weight:900;
+  font-size:18px;
+}
+
+.health-note{
+  margin-top:12px;
+  background:#020617;
+  border-radius:14px;
+  padding:14px;
+  font-size:14px;
+  line-height:1.5;
+}
+
+/* ===== SMART KPI COMMAND CENTER ===== */
+
+.smart-kpi-center{
+  margin:30px 0;
+  background:linear-gradient(135deg,#111827,#312e81);
+  border-radius:30px;
+  padding:30px;
+  border:1px solid rgba(255,255,255,.1);
+}
+
+.smart-kpi-center h2{
+  margin:0 0 22px;
+  font-size:38px;
+}
+
+.smart-kpi-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+  gap:18px;
+}
+
+.smart-kpi-card{
+  background:rgba(255,255,255,.08);
+  border-radius:22px;
+  padding:24px;
+}
+
+.smart-kpi-card span{
+  opacity:.7;
+  font-size:13px;
+}
+
+.smart-kpi-card strong{
+  display:block;
+  margin-top:10px;
+  font-size:34px;
+}
+
+.smart-kpi-positive{
+  color:#22c55e;
+}
+
+.smart-kpi-warning{
+  color:#f59e0b;
+}
+
+
+/* ===== DEMO SALES MODE ===== */
+
+.sales-demo{
+  margin:30px 0;
+  background:linear-gradient(135deg,#111827,#7c2d12);
+  border-radius:30px;
+  padding:30px;
+  border:1px solid rgba(255,255,255,.12);
+}
+
+.sales-demo h2{
+  margin:0 0 22px;
+  font-size:38px;
+}
+
+.sales-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
+  gap:18px;
+}
+
+.sales-card{
+  background:rgba(255,255,255,.08);
+  border-radius:22px;
+  padding:22px;
+}
+
+.sales-card span{
+  opacity:.7;
+  font-size:13px;
+}
+
+.sales-card strong{
+  display:block;
+  margin-top:8px;
+  font-size:24px;
+}
+
+.sales-pitch{
+  margin-top:24px;
+  background:#020617;
+  border-radius:20px;
+  padding:22px;
+  line-height:1.7;
+}
+
+.sales-btn{
+  margin-top:18px;
+  background:#f97316;
+  color:white;
+  border:none;
+  border-radius:16px;
+  padding:16px 22px;
+  font-weight:900;
+  cursor:pointer;
+}
+
+/* ===== LIVE DEAL TICKER ===== */
+
+.ticker-wrap{
+  margin-bottom:24px;
+  background:#020617;
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:18px;
+  overflow:hidden;
+  position:relative;
+}
+
+.ticker{
+  display:flex;
+  gap:60px;
+  white-space:nowrap;
+  padding:16px 0;
+  animation:tickerMove 30s linear infinite;
+}
+
+.ticker-item{
+  font-weight:900;
+  font-size:16px;
+}
+
+.ticker-green{
+  color:#22c55e;
+}
+
+.ticker-yellow{
+  color:#f59e0b;
+}
+
+.ticker-red{
+  color:#ef4444;
+}
+
+@keyframes tickerMove{
+  0%{
+    transform:translateX(0);
+  }
+  100%{
+    transform:translateX(-50%);
+  }
+}
+
+
+/* ===== WAITLIST / LEADS PRO ===== */
+
+.leads-center{
+  margin:30px 0;
+  background:linear-gradient(135deg,#020617,#701a75);
+  border-radius:30px;
+  padding:30px;
+  border:1px solid rgba(255,255,255,.12);
+}
+
+.leads-center h2{
+  margin:0 0 22px;
+  font-size:38px;
+}
+
+.leads-row{
+  display:flex;
+  gap:14px;
+  margin-top:18px;
+}
+
+.leads-row input{
+  flex:1;
+  padding:18px;
+  border:none;
+  border-radius:16px;
+  font-size:16px;
+}
+
+.leads-row button{
+  background:#d946ef;
+  color:white;
+  border:none;
+  border-radius:16px;
+  padding:18px 24px;
+  font-weight:900;
+  cursor:pointer;
+}
+
+.leads-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+  gap:18px;
+}
+
+.leads-card{
+  background:rgba(255,255,255,.08);
+  border-radius:22px;
+  padding:22px;
+}
+
+.leads-card span{
+  opacity:.7;
+  font-size:13px;
+}
+
+.leads-card strong{
+  display:block;
+  margin-top:8px;
+  font-size:28px;
+}

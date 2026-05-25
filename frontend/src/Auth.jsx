@@ -1,121 +1,51 @@
 import { useState } from "react"
-import { API_URL } from "./config"
+
+const API_URL = "http://127.0.0.1:8000"
 
 export default function Auth({ onLogin }) {
+  const [mode, setMode] = useState("login")
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
 
-  const [isLogin,setIsLogin] =
-    useState(true)
+  const submit = async () => {
+    const endpoint = mode === "login" ? "login" : "register"
 
-  const [email,setEmail] =
-    useState("")
+    const res = await fetch(`${API_URL}/${endpoint}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password })
+    })
 
-  const [password,setPassword] =
-    useState("")
+    const data = await res.json()
 
-  const submit = async() => {
-
-    const endpoint =
-      isLogin
-        ? "login"
-        : "register"
-
-    const response = await fetch(
-      `${API_URL}/${endpoint}`,
-      {
-        method:"POST",
-        headers:{
-          "Content-Type":"application/json"
-        },
-        body:JSON.stringify({
-          email,
-          password
-        })
-      }
-    )
-
-    const data =
-      await response.json()
-
-    if(data.token){
-
-      localStorage.setItem(
-        "token",
-        data.token
-      )
-
-      localStorage.setItem(
-        "email",
-        data.email
-      )
-
-      onLogin(data.email)
-
-    }else{
-
-      alert(data.message)
+    if (data.token) {
+      localStorage.setItem("token", data.token)
+      localStorage.setItem("email", data.email || email)
+      onLogin(data.email || email)
+      return
     }
+
+    alert(data.message || "No se pudo entrar")
   }
 
-  return(
-
-    <div className="auth-container">
-
+  return (
+    <div className="auth-screen">
       <div className="auth-card">
+        <h1>🚘 Coches SaaS</h1>
+        <p>Acceso profesional IA</p>
 
-        <div className="auth-title">
-          🚘 Coches SaaS
-        </div>
+        <input placeholder="Correo electrónico" value={email} onChange={(e) => setEmail(e.target.value)} />
 
-        <div className="auth-subtitle">
-          Plataforma IA de compraventa
-          profesional
-        </div>
+        <input placeholder="Contraseña" type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
 
-        <input
-          className="auth-input"
-          placeholder="Email"
-          value={email}
-          onChange={(e)=>
-            setEmail(e.target.value)
-          }
-        />
-
-        <input
-          className="auth-input"
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={(e)=>
-            setPassword(e.target.value)
-          }
-        />
-
-        <button
-          className="auth-button"
-          onClick={submit}
-        >
-          {
-            isLogin
-              ? "Entrar"
-              : "Crear cuenta"
-          }
+        <button onClick={submit}>
+          {mode === "login" ? "Entrar" : "Crear cuenta"}
         </button>
 
-        <div
-          className="auth-switch"
-          onClick={()=>
-            setIsLogin(!isLogin)
-          }
-        >
-          {
-            isLogin
-              ? "Crear cuenta nueva"
-              : "Ya tengo cuenta"
-          }
-        </div>
-
+        <span onClick={() => setMode(mode === "login" ? "register" : "login")}>
+          {mode === "login" ? "Crear cuenta nueva" : "Ya tengo cuenta"}
+        </span>
       </div>
-
     </div>
   )
 }

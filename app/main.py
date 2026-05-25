@@ -56,7 +56,7 @@ def login(data: dict, db: Session = Depends(get_db)):
     if not user:
         return {"message": "Usuario no encontrado"}
 
-    if not verify_password(data["password"], user.hashed_password):
+    if not verify_password(data["password"], user.password):
         return {"message": "Password incorrecta"}
 
     token = create_token({"sub": user.email})
@@ -215,3 +215,57 @@ def import_car_url(data: dict, db: Session = Depends(get_db)):
     scraped_data = scrape_car_url(url)
 
     return analyze_car(scraped_data, db)
+
+@app.post("/cars/radar-demo")
+def radar_demo(db: Session = Depends(get_db)):
+    demo_cars = [
+        {
+            "brand": "BMW",
+            "model": "M340i",
+            "year": 2021,
+            "km": 52000,
+            "price": 32000,
+            "image_url": "https://images.unsplash.com/photo-1555215695-3004980ad54e"
+        },
+        {
+            "brand": "Porsche",
+            "model": "Panamera",
+            "year": 2020,
+            "km": 61000,
+            "price": 56000,
+            "image_url": "https://images.unsplash.com/photo-1503376780353-7e6692767b70"
+        },
+        {
+            "brand": "Audi",
+            "model": "RS6",
+            "year": 2021,
+            "km": 43000,
+            "price": 68000,
+            "image_url": "https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8"
+        }
+    ]
+
+    results = []
+
+    for car in demo_cars:
+        result = analyze_car(car, db)
+        results.append(result)
+
+    return {
+        "message": "Radar IA ejecutado",
+        "importados": len(results),
+        "results": results
+    }
+
+favorites = []
+
+@app.post("/cars/favorite/{car_id}")
+def favorite_car(car_id: int):
+
+    if car_id not in favorites:
+        favorites.append(car_id)
+
+    return {
+        "favorites": favorites
+    }
+

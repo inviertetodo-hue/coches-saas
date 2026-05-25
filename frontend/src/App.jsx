@@ -1,183 +1,760 @@
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useState } from "react"
 import "./App.css"
+import Auth from "./Auth"
+
+import {
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  BarChart,
+  Bar
+} from "recharts"
 
 const API_URL = "http://127.0.0.1:8000"
 
-function App() {
+export default function App() {
+
+  const [user, setUser] = useState(
+    localStorage.getItem("email")
+  )
+
   const [cars, setCars] = useState([])
-  const [stats, setStats] = useState({})
+
+  const [url, setUrl] = useState("")
+
   const [loading, setLoading] = useState(false)
 
   const [search, setSearch] = useState("")
-  const [onlyHotDeals, setOnlyHotDeals] = useState(false)
 
-  const [formData, setFormData] = useState({
-    brand: "",
-    model: "",
-    year: "",
-    km: "",
-    price: "",
-    image_url: ""
-  })
+  const [onlyDeals, setOnlyDeals] =
+    useState(false)
 
-  const loadDashboard = async () => {
-    const response = await fetch(`${API_URL}/cars/dashboard`)
-    const data = await response.json()
+  const [sortBy, setSortBy] =
+    useState("roi")
+
+  const loadCars = async () => {
+
+    const res = await fetch(
+      `${API_URL}/cars/dashboard`
+    )
+
+    const data = await res.json()
+
     setCars(data.top_deals || [])
-    setStats(data.stats || {})
   }
 
   useEffect(() => {
-    loadDashboard()
-  }, [])
 
-  const analyzeCar = async () => {
+    if(user){
+      loadCars()
+    }
+
+  }, [user])
+
+  const logout = () => {
+
+    localStorage.clear()
+
+    setUser(null)
+  }
+
+  const runRadar = async () => {
     setLoading(true)
 
-    await fetch(`${API_URL}/cars/analyze`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        ...formData,
-        year: Number(formData.year),
-        km: Number(formData.km),
-        price: Number(formData.price)
-      })
+    await fetch(`${API_URL}/cars/radar-demo`, {
+      method: "POST"
     })
 
-    await loadDashboard()
+    await loadCars()
+
     setLoading(false)
-
-    setFormData({
-      brand: "",
-      model: "",
-      year: "",
-      km: "",
-      price: "",
-      image_url: ""
-    })
   }
 
-  const importUrl = async () => {
-    const url = prompt("Pega URL del coche")
+  const importCar = async () => {
 
-    if (!url) return
+    if(!url){
+      return
+    }
 
-    await fetch(`${API_URL}/cars/import-url`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ url })
-    })
+    setLoading(true)
 
-    await loadDashboard()
+    await fetch(
+      `${API_URL}/cars/import-url`,
+      {
+        method:"POST",
+        headers:{
+          "Content-Type":"application/json"
+        },
+        body:JSON.stringify({
+          url
+        })
+      }
+    )
+
+    setUrl("")
+
+    await loadCars()
+
+    setLoading(false)
   }
 
-  const deleteCar = async (id) => {
-    await fetch(`${API_URL}/cars/${id}`, { method: "DELETE" })
-    await loadDashboard()
-  }
+  const toggleFavorite = (id) => {
 
-  const filteredCars = useMemo(() => {
-    let result = [...cars]
-
-    if (search) {
-      result = result.filter(car =>
-        `${car.brand} ${car.model}`.toLowerCase().includes(search.toLowerCase())
+    setCars(
+      cars.map(car =>
+        car.id === id
+          ? {
+              ...car,
+              favorite: !car.favorite
+            }
+          : car
       )
-    }
+    )
+  }
 
-    if (onlyHotDeals) {
-      result = result.filter(car => car.roi >= 15)
-    }
+  const deleteCar = async(id) => {
 
-    return result
-  }, [cars, search, onlyHotDeals])
+    await fetch(
+      `${API_URL}/cars/${id}`,
+      {
+        method:"DELETE"
+      }
+    )
+
+    await loadCars()
+  }
+
+  if(!user){
+    return (
+      <Auth onLogin={setUser} />
+    )
+  }
+
+  const filteredCars =
+    cars
+      .filter(car =>
+        `${car.brand} ${car.model}`
+          .toLowerCase()
+          .includes(
+            search.toLowerCase()
+          )
+      )
+      .filter(car =>
+        onlyDeals
+          ? car.roi >= 15
+          : true
+      )
+      .sort((a,b)=>{
+
+        if(sortBy === "roi"){
+          return b.roi - a.roi
+        }
+
+        if(sortBy === "profit"){
+          return (
+            (b.estimated_net_profit || 0)
+            -
+            (a.estimated_net_profit || 0)
+          )
+        }
+
+        if(sortBy === "price"){
+          return b.price - a.price
+        }
+
+        return 0
+      })
 
   return (
+
     <div className="app">
-      <div className="hero">
-        <div className="hero-top">
-          <h1>🚘 Coches SaaS</h1>
-          <div className="hero-badge">🔥 MOTOR AUTOMOTRIZ IA</div>
-        </div>
-        <p>Inteligencia artificial para compraventa profesional</p>
-      </div>
 
-      <button className="import-btn" onClick={importUrl}>
-        🔗 Importar URL
-      </button>
+      <aside className="sidebar">
 
-      <div className="form-grid">
-        <input placeholder="Marca" value={formData.brand} onChange={(e) => setFormData({ ...formData, brand: e.target.value })} />
-        <input placeholder="Modelo" value={formData.model} onChange={(e) => setFormData({ ...formData, model: e.target.value })} />
-        <input placeholder="Año" value={formData.year} onChange={(e) => setFormData({ ...formData, year: e.target.value })} />
-        <input placeholder="KM" value={formData.km} onChange={(e) => setFormData({ ...formData, km: e.target.value })} />
-        <input placeholder="Precio" value={formData.price} onChange={(e) => setFormData({ ...formData, price: e.target.value })} />
-        <input placeholder="URL imagen" value={formData.image_url} onChange={(e) => setFormData({ ...formData, image_url: e.target.value })} />
-      </div>
+        <h1>
+          🚘 Coches SaaS
+        </h1>
 
-      <button className="analyze-btn" onClick={analyzeCar}>
-        {loading ? "ANALIZANDO..." : "🚀 ANALIZAR COCHE"}
-      </button>
-
-      <div className="stats-grid">
-        <div className="stat-card"><h3>🚗 Coches</h3><h2>{stats.total_cars || 0}</h2></div>
-        <div className="stat-card"><h3>🔥 Hot Deals</h3><h2>{stats.hot_deals_count || 0}</h2></div>
-        <div className="stat-card"><h3>💰 Profit</h3><h2>{stats.total_profit || 0} €</h2></div>
-        <div className="stat-card"><h3>📈 IA Score</h3><h2>{stats.avg_score || 0}</h2></div>
-      </div>
-
-      <div className="filters-row">
-        <input className="search-input" placeholder="Buscar marca o modelo..." value={search} onChange={(e) => setSearch(e.target.value)} />
-
-        <button className={`filter-chip ${onlyHotDeals ? "active" : ""}`} onClick={() => setOnlyHotDeals(!onlyHotDeals)}>
-          🔥 Solo chollos IA
+        <button>
+          📊 Dashboard
         </button>
-      </div>
 
-      <div className="cars-grid">
-        {filteredCars.map(car => (
-          <div
-            key={car.id}
-            className={
-              car.roi >= 20
-                ? "car-card super-hot"
-                : car.roi >= 10
-                ? "car-card good-deal"
-                : "car-card normal-deal"
-            }
-          >
-            <img src={car.image_url} alt="" />
+        <button>
+          🔥 Chollos IA
+        </button>
 
-            <div className="car-content">
-              <h2>{car.brand} {car.model}</h2>
+        <button>
+          🔗 Importador
+        </button>
 
-              <p>📅 {car.year}</p>
-              <p>🛣️ {car.km} km</p>
-              <p>💶 {car.price} €</p>
+        <button>
+          💰 ROI
+        </button>
 
-              <hr />
+        <button>
+          ⚙️ Ajustes
+        </button>
 
-              <p>🏪 Mercado: {car.estimated_market_price} €</p>
-              <p>🛠️ Gastos: {car.estimated_expenses} €</p>
+        <button
+          className="logout"
+          onClick={logout}
+        >
+          Cerrar sesión
+        </button>
 
-              <h3 className="profit">💰 {car.estimated_net_profit} €</h3>
+      </aside>
 
-              <p>📈 ROI: {car.roi} %</p>
+      <main className="main">
 
-              <div className="score-box">⭐ {car.score}</div>
+        <div className="hero">
 
-              <div className="recommendation">{car.recommendation}</div>
+          <h2>
+            Motor IA profesional
+          </h2>
 
-              <button className="delete-btn" onClick={() => deleteCar(car.id)}>
-                🗑 Eliminar
-              </button>
+          <p>
+            Detecta oportunidades
+            automáticas de compraventa
+          </p>
+
+        </div>
+
+        <div className="kpi-grid">
+
+          <div className="kpi-card">
+            <span>Total coches</span>
+            <h3>{cars.length}</h3>
+          </div>
+
+          <div className="kpi-card">
+            <span>Chollos IA</span>
+            <h3>
+              {
+                cars.filter(
+                  car => car.roi >= 15
+                ).length
+              }
+            </h3>
+          </div>
+
+          <div className="kpi-card">
+            <span>Profit total</span>
+            <h3>
+              {
+                cars.reduce(
+                  (s,car)=>
+                    s +
+                    (
+                      car.estimated_net_profit
+                      || 0
+                    ),
+                  0
+                )
+              } €
+            </h3>
+          </div>
+
+          <div className="kpi-card">
+            <span>ROI medio</span>
+            <h3>
+              {
+                cars.length
+                ? (
+                    cars.reduce(
+                      (s,car)=>
+                        s + (car.roi || 0),
+                      0
+                    )
+                    /
+                    cars.length
+                  ).toFixed(1)
+                : 0
+              }%
+            </h3>
+          </div>
+
+        </div>
+
+        <div className="charts-grid">
+
+          <div className="chart-card">
+
+            <h2>
+              📈 ROI
+            </h2>
+
+            <ResponsiveContainer
+              width="100%"
+              height={300}
+            >
+
+              <LineChart data={cars}>
+
+                <XAxis dataKey="brand" />
+
+                <YAxis />
+
+                <Tooltip />
+
+                <Line
+                  type="monotone"
+                  dataKey="roi"
+                  stroke="#22c55e"
+                />
+
+              </LineChart>
+
+            </ResponsiveContainer>
+
+          </div>
+
+          <div className="chart-card">
+
+            <h2>
+              💰 Profit
+            </h2>
+
+            <ResponsiveContainer
+              width="100%"
+              height={300}
+            >
+
+              <BarChart data={cars}>
+
+                <XAxis dataKey="brand" />
+
+                <YAxis />
+
+                <Tooltip />
+
+                <Bar
+                  dataKey="estimated_net_profit"
+                  fill="#3b82f6"
+                />
+
+              </BarChart>
+
+            </ResponsiveContainer>
+
+          </div>
+
+        </div>
+
+        <div className="ranking-box">
+
+          <h2>
+            🏆 TOP 5 Chollos IA
+          </h2>
+
+          {
+            [...cars]
+              .sort(
+                (a,b)=>b.roi-a.roi
+              )
+              .slice(0,5)
+              .map(car => (
+
+                <div
+                  className="ranking-item"
+                  key={car.id}
+                >
+
+                  <span>
+                    {car.brand} {car.model}
+                  </span>
+
+                  <span>
+                    ROI {car.roi}%
+                  </span>
+
+                </div>
+              ))
+          }
+
+        </div>
+
+        <button
+          className="analyze-btn"
+          onClick={runRadar}
+        >
+          🚨 EJECUTAR RADAR IA
+        </button>
+
+        
+        <div className="alert-panel">
+          <h2>🚨 Radar IA de oportunidades</h2>
+
+          <div className="alert-grid">
+            <div className="alert-card">
+              <span>Mejor ROI</span>
+              <strong>
+                {cars.length ? Math.max(...cars.map(car => car.roi || 0)) : 0}%
+              </strong>
+            </div>
+
+            <div className="alert-card">
+              <span>Mayor beneficio</span>
+              <strong>
+                {cars.length ? Math.max(...cars.map(car => car.estimated_net_profit || 0)) : 0} €
+              </strong>
+            </div>
+
+            <div className="alert-card">
+              <span>Chollos fuertes</span>
+              <strong>
+                {cars.filter(car => (car.roi || 0) >= 20).length}
+              </strong>
+            </div>
+
+            <div className="alert-card">
+              <span>Estado IA</span>
+              <strong>
+                {cars.some(car => (car.roi || 0) >= 20) ? "🔥 Comprar ya" : "Buscando..."}
+              </strong>
             </div>
           </div>
-        ))}
+        </div>
+
+        <div className="import-box">
+
+          <input
+            value={url}
+            onChange={(e)=>
+              setUrl(e.target.value)
+            }
+            placeholder="
+            Pega URL Mobile.de
+            o AutoScout24
+            "
+          />
+
+          <button onClick={importCar}>
+
+            {
+              loading
+                ? "Importando..."
+                : "Importar URL"
+            }
+
+          </button>
+
+        </div>
+
+        <div className="filter-bar">
+
+          <input
+            placeholder="
+            Buscar marca o modelo...
+            "
+            value={search}
+            onChange={(e)=>
+              setSearch(e.target.value)
+            }
+          />
+
+          <button
+            className={
+              onlyDeals
+                ? "active"
+                : ""
+            }
+            onClick={()=>
+              setOnlyDeals(!onlyDeals)
+            }
+          >
+            🔥 Solo chollos
+          </button>
+
+          <select
+            className="sort-select"
+            value={sortBy}
+            onChange={(e)=>
+              setSortBy(e.target.value)
+            }
+          >
+            <option value="roi">
+              ROI
+            </option>
+
+            <option value="profit">
+              Profit
+            </option>
+
+            <option value="price">
+              Precio
+            </option>
+
+          </select>
+
+        </div>
+
+        <div className="cars-grid">
+
+          {
+            filteredCars.map(car => (
+
+              <div
+                key={car.id}
+                className={
+                  car.favorite
+                    ? "car-card favorite"
+                    : car.roi >= 20
+                    ? "car-card super-hot"
+                    : car.roi >= 10
+                    ? "car-card good-deal"
+                    : "car-card normal-deal"
+                }
+              >
+
+                <img
+                  src={car.image_url}
+                />
+
+                <h3>
+                  {car.brand}
+                  {" "}
+                  {car.model}
+                </h3>
+
+                <p>
+                  📅 {car.year}
+                </p>
+
+                <p>
+                  🛣️ {car.km} km
+                </p>
+
+                <p>
+                  💶 {car.price} €
+                </p>
+
+                <p>
+                  🏪 Mercado:
+                  {" "}
+                  {
+                    car.estimated_market_price
+                  } €
+                </p>
+
+                <h2>
+                  💰
+                  {" "}
+                  {
+                    car.estimated_net_profit
+                  } €
+                </h2>
+
+                <div className="roi">
+                  ROI:
+                  {" "}
+                  {car.roi}%
+                </div>
+
+                <div
+                  className={
+                    car.score >= 85
+                      ? "score-ring score-green"
+                      : car.score >= 65
+                      ? "score-ring score-yellow"
+                      : "score-ring score-red"
+                  }
+                >
+                  IA SCORE {car.score}
+                </div>
+
+                <div className="decision-badge">
+                  {car.recommendation}
+                </div>
+
+                <div className="badges-row">
+
+                  {(car.roi || 0) >= 20 && (
+                    <div className="ai-badge badge-green">
+                      🔥 SUPER CHOLLO
+                    </div>
+                  )}
+
+                  {(car.km || 0) <= 80000 && (
+                    <div className="ai-badge badge-blue">
+                      🛣️ LOW KM
+                    </div>
+                  )}
+
+                  {(car.price || 0) >= 50000 && (
+                    <div className="ai-badge badge-purple">
+                      👑 PREMIUM
+                    </div>
+                  )}
+
+                  {(car.score || 0) >= 85 && (
+                    <div className="ai-badge badge-orange">
+                      🚀 HIGH SCORE
+                    </div>
+                  )}
+
+                </div>
+
+                <button
+                  className="favorite-btn"
+                  onClick={()=>{
+                    alert("⭐ Añadido a favoritos")
+                  }}
+                >
+                  ⭐ Favorito
+                </button>
+
+                <button
+                  className="favorite-btn"
+                  onClick={()=>
+                    toggleFavorite(car.id)
+                  }
+                >
+                  {
+                    car.favorite
+                      ? "⭐ Favorito"
+                      : "☆ Añadir favorito"
+                  }
+                </button>
+
+                <button
+                  className="delete-btn"
+                  onClick={()=>
+                    deleteCar(car.id)
+                  }
+                >
+                  🗑 Eliminar
+                </button>
+
+              </div>
+            ))
+          }
+
+        </div>
+
+      
+
+<div className="cars-grid">
+  {cars.map((car, index) => (
+    <div className="car-card" key={index}>
+
+      <img
+        src={car.image_url}
+        className="car-image"
+      />
+
+      <div className="car-body">
+
+        <div className="car-title">
+          {car.brand} {car.model}
+        </div>
+
+        <div className="car-year">
+          {car.year} · {car.km} km
+        </div>
+
+        <div className="price-row">
+          <span>{car.price} €</span>
+          <span className="roi-badge">
+            ROI {car.roi}%
+          </span>
+        </div>
+
+        <div className="profit-box">
+          💰 Beneficio estimado:
+          <strong>
+            {car.profit} €
+          </strong>
+        </div>
+
+        <div className="recommendation">
+          🔥 {car.recommendation}
+        </div>
+
+        <button
+          className="favorite-btn"
+          onClick={async () => {
+            await fetch(`${API_URL}/cars/favorite/${index}`, {
+              method: "POST"
+            })
+
+            alert("⭐ Añadido a favoritos")
+          }}
+        >
+          ⭐ Favorito
+        </button>
+
       </div>
+
+    </div>
+  ))}
+</div>
+
+
+
+
+<div className="cars-grid">
+  {cars.map((car, index) => (
+    <div className="car-card" key={index}>
+
+      <img
+        src={car.image_url}
+        className="car-image"
+      />
+
+      <div className="car-body">
+
+        <div className="car-title">
+          {car.brand} {car.model}
+        </div>
+
+        <div className="car-year">
+          {car.year} · {car.km} km
+        </div>
+
+        <div className="price-row">
+          <span>{car.price} €</span>
+
+          <span className="roi-badge">
+            ROI {car.roi}%
+          </span>
+        </div>
+
+        <div className="profit-box">
+          💰 Beneficio estimado:
+          <strong>
+            {car.profit} €
+          </strong>
+        </div>
+
+        <div className="recommendation">
+          🔥 {car.recommendation}
+        </div>
+
+        <button
+          className="favorite-btn"
+          onClick={async () => {
+            await fetch(`${API_URL}/cars/favorite/${index}`, {
+              method: "POST"
+            })
+
+            alert("⭐ Añadido a favoritos")
+          }}
+        >
+          ⭐ Favorito
+        </button>
+
+      </div>
+
+    </div>
+  ))}
+</div>
+
+
+</main>
+
     </div>
   )
 }
-
-export default App

@@ -1,28 +1,144 @@
 import re
 import requests
+
 from bs4 import BeautifulSoup
 
 HEADERS = {
     "User-Agent": "Mozilla/5.0"
 }
 
-def extract_number(text):
+KNOWN_BRANDS = [
+    "BMW",
+    "Audi",
+    "Mercedes",
+    "Porsche",
+    "Volkswagen",
+    "Toyota",
+    "Tesla",
+    "Cupra",
+    "Peugeot",
+    "Renault",
+    "Citroen",
+    "Ford"
+]
+
+def clean_number(text):
+
     if not text:
         return None
 
-    cleaned = re.sub(r"[^\d]", "", text)
+    value = re.sub(r"[^\d]", "", text)
 
-    if not cleaned:
+    if not value:
         return None
 
-    return int(cleaned)
+    return int(value)
+
+
+def detect_brand(text):
+
+    for brand in KNOWN_BRANDS:
+
+        if brand.lower() in text.lower():
+            return brand.upper()
+
+    return "BMW"
+
+
+def detect_model(text, brand):
+
+    text = text.replace("\n", " ")
+
+    patterns = [
+        rf"{brand}\s([A-Za-z0-9\-]+)",
+        rf"{brand.lower()}\s([A-Za-z0-9\-]+)"
+    ]
+
+    for pattern in patterns:
+
+        match = re.search(
+            pattern,
+            text,
+            re.IGNORECASE
+        )
+
+        if match:
+            return match.group(1).upper()
+
+    return "IMPORTADO"
+
+
+def detect_year(text):
+
+    match = re.search(
+        r"(201[5-9]|202[0-6])",
+        text
+    )
+
+    if match:
+        return int(match.group(1))
+
+    return 2020
+
+
+def detect_price(text):
+
+    patterns = [
+        r"(\d{1,3}[.,]\d{3})\s?€",
+        r"€\s?(\d{1,3}[.,]\d{3})"
+    ]
+
+    for pattern in patterns:
+
+        match = re.search(
+            pattern,
+            text
+        )
+
+        if match:
+
+            value = clean_number(
+                match.group(1)
+            )
+
+            if value:
+                return value
+
+    return 30000
+
+
+def detect_km(text):
+
+    patterns = [
+        r"(\d{1,3}[.,]\d{3})\s?km",
+        r"(\d{1,3}[.,]\d{3})\s?kms"
+    ]
+
+    for pattern in patterns:
+
+        match = re.search(
+            pattern,
+            text.lower()
+        )
+
+        if match:
+
+            value = clean_number(
+                match.group(1)
+            )
+
+            if value:
+                return value
+
+    return 70000
 
 
 def scrape_car_url(url: str):
+
     response = requests.get(
         url,
         headers=HEADERS,
-        timeout=10
+        timeout=15
     )
 
     soup = BeautifulSoup(
@@ -30,65 +146,42 @@ def scrape_car_url(url: str):
         "html.parser"
     )
 
+    title = ""
+
+    if soup.title:
+        title = soup.title.text
+
     page_text = soup.get_text(
         " ",
         strip=True
     )
 
-    title = (
-        soup.title.string
-        if soup.title
-        else ""
+    full_text = f"{title} {page_text}"
+
+    brand = detect_brand(full_text)
+
+    model = detect_model(
+        full_text,
+        brand
     )
 
-    combined = f"{title} {page_text}"
+    year = detect_year(full_text)
 
-    brand = "BMW"
-    model = "Importado"
+    price = detect_price(full_text)
 
-    known_brands = [
-        "BMW",
-        "Audi",
-        "Mercedes",
-        "Porsche",
-        "Volkswagen",
-        "Toyota",
-        "Tesla"
-    ]
-
-    for item in known_brands:
-        if item.lower() in combined.lower():
-            brand = item.upper()
-            break
-
-    year = 2020
-    year_match = re.search(r"(20[0-2][0-9])", combined)
-
-    if year_match:
-        year = int(year_match.group(1))
-
-    price = 30000
-    price_match = re.search(r"(\d{2,3}[.,]?\d{3})\s?€", combined)
-
-    if price_match:
-        price = extract_number(price_match.group(1))
-
-    km = 70000
-    km_match = re.search(r"(\d{1,3}[.,]?\d{3})\s?km", combined.lower())
-
-    if km_match:
-        km = extract_number(km_match.group(1))
+    km = detect_km(full_text)
 
     image_url = ""
 
-    og_image = soup.find(
+    og = soup.find(
         "meta",
         property="og:image"
     )
 
-    if og_image and og_image.get("content"):
-        image_url = og_image.get("content")
-    else:
+    if og and og.get("content"):
+        image_url = og.get("content")
+
+    if not image_url:
         image_url = "https://images.unsplash.com/photo-1503376780353-7e6692767b70"
 
     return {

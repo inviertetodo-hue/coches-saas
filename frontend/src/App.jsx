@@ -1,3 +1,4 @@
+import Auth from "./Auth"
 import { useEffect, useMemo, useState } from "react"
 import "./App.css"
 
@@ -19,9 +20,17 @@ const API_URL = "http://127.0.0.1:8000"
 
 function App() {
 
+  const savedEmail =
+    localStorage.getItem("email")
+
+
   const [cars, setCars] = useState([])
   const [stats, setStats] = useState({})
   const [loading, setLoading] = useState(false)
+
+  const [user,setUser] =
+    useState(savedEmail)
+
 
   const [search, setSearch] = useState("")
   const [sortBy, setSortBy] = useState("score")

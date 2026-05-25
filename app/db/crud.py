@@ -24,3 +24,31 @@ def delete_car(db: Session, car_id: int):
         db.commit()
 
     return car
+
+from app.db.models import User
+
+def create_user(
+    db,
+    email,
+    hashed_password
+):
+    user = User(
+        email=email,
+        hashed_password=hashed_password
+    )
+
+    db.add(user)
+
+    db.commit()
+
+    db.refresh(user)
+
+    return user
+
+def get_user_by_email(db, email):
+
+    return (
+        db.query(User)
+        .filter(User.email == email)
+        .first()
+    )

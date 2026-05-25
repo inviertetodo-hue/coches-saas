@@ -128,3 +128,14 @@ def analyze_car(data: dict, db: Session = Depends(get_db)):
         "score": score,
         "recommendation": recommendation
     }
+
+@app.delete("/cars/{car_id}")
+def delete_car_endpoint(car_id: int, db: Session = Depends(get_db)):
+    from app.db.crud import delete_car
+
+    car = delete_car(db, car_id)
+
+    if not car:
+        return {"message": "Coche no encontrado"}
+
+    return {"message": "Coche eliminado"}

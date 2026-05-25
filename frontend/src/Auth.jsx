@@ -3,15 +3,21 @@ import { API_URL } from "./config"
 
 export default function Auth({ onLogin }) {
 
-  const [isLogin, setIsLogin] = useState(true)
+  const [isLogin,setIsLogin] =
+    useState(true)
 
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
+  const [email,setEmail] =
+    useState("")
 
-  const submit = async () => {
+  const [password,setPassword] =
+    useState("")
+
+  const submit = async() => {
 
     const endpoint =
-      isLogin ? "login" : "register"
+      isLogin
+        ? "login"
+        : "register"
 
     const response = await fetch(
       `${API_URL}/${endpoint}`,
@@ -20,14 +26,15 @@ export default function Auth({ onLogin }) {
         headers:{
           "Content-Type":"application/json"
         },
-        body: JSON.stringify({
+        body:JSON.stringify({
           email,
           password
         })
       }
     )
 
-    const data = await response.json()
+    const data =
+      await response.json()
 
     if(data.token){
 
@@ -43,48 +50,71 @@ export default function Auth({ onLogin }) {
 
       onLogin(data.email)
 
-    } else {
+    }else{
 
       alert(data.message)
     }
   }
 
-  return (
+  return(
+
     <div className="auth-container">
 
-      <h1>
-        🔐 Coches SaaS Login
-      </h1>
+      <div className="auth-card">
 
-      <input
-        placeholder="Email"
-        value={email}
-        onChange={(e)=>setEmail(e.target.value)}
-      />
+        <div className="auth-title">
+          🚘 Coches SaaS
+        </div>
 
-      <input
-        type="password"
-        placeholder="Password"
-        value={password}
-        onChange={(e)=>setPassword(e.target.value)}
-      />
+        <div className="auth-subtitle">
+          Plataforma IA de compraventa
+          profesional
+        </div>
 
-      <button onClick={submit}>
-        {isLogin ? "Entrar" : "Crear cuenta"}
-      </button>
+        <input
+          className="auth-input"
+          placeholder="Email"
+          value={email}
+          onChange={(e)=>
+            setEmail(e.target.value)
+          }
+        />
 
-      <p
-        onClick={()=>setIsLogin(!isLogin)}
-        style={{
-          cursor:"pointer"
-        }}
-      >
-        {
-          isLogin
-          ? "Crear cuenta"
-          : "Ya tengo cuenta"
-        }
-      </p>
+        <input
+          className="auth-input"
+          type="password"
+          placeholder="Password"
+          value={password}
+          onChange={(e)=>
+            setPassword(e.target.value)
+          }
+        />
+
+        <button
+          className="auth-button"
+          onClick={submit}
+        >
+          {
+            isLogin
+              ? "Entrar"
+              : "Crear cuenta"
+          }
+        </button>
+
+        <div
+          className="auth-switch"
+          onClick={()=>
+            setIsLogin(!isLogin)
+          }
+        >
+          {
+            isLogin
+              ? "Crear cuenta nueva"
+              : "Ya tengo cuenta"
+          }
+        </div>
+
+      </div>
 
     </div>
   )

@@ -1,57 +1,36 @@
-import Auth from "./Auth"
 import { useEffect, useMemo, useState } from "react"
 import "./App.css"
-
-import Analytics from "./components/Analytics"
-
-import {
-  ResponsiveContainer,
-  BarChart,
-  Bar,
-  XAxis,
- YAxis,
-  Tooltip,
-  PieChart,
-  Pie,
-  Cell
-} from "recharts"
 
 const API_URL = "http://127.0.0.1:8000"
 
 function App() {
-
-  const savedEmail =
-    localStorage.getItem("email")
-
-
   const [cars, setCars] = useState([])
   const [stats, setStats] = useState({})
   const [loading, setLoading] = useState(false)
 
-  const [user,setUser] =
-    useState(savedEmail)
-
-
   const [search, setSearch] = useState("")
+
+  const [importUrl,setImportUrl] =
+    useState("")
+
   const [sortBy, setSortBy] = useState("score")
   const [onlyHotDeals, setOnlyHotDeals] = useState(false)
+  const [onlyPremium, setOnlyPremium] = useState(false)
+  const [onlyFavorites, setOnlyFavorites] = useState(false)
+  const [hideSold, setHideSold] = useState(false)
 
   const [formData, setFormData] = useState({
-    brand:"",
-    model:"",
-    year:"",
-    km:"",
-    price:"",
-    image_url:""
+    brand: "",
+    model: "",
+    year: "",
+    km: "",
+    price: "",
+    image_url: ""
   })
 
   const loadDashboard = async () => {
-
-    const response =
-      await fetch(`${API_URL}/cars/dashboard`)
-
+    const response = await fetch(`${API_URL}/cars/dashboard`)
     const data = await response.json()
-
     setCars(data.top_deals || [])
     setStats(data.stats || {})
   }
@@ -60,507 +39,251 @@ function App() {
     loadDashboard()
   }, [])
 
-  const analyzeCar = async () => {
+  const importFromUrl = async () => {
 
+    if(!importUrl){
+      return
+    }
+
+    await fetch(
+      `${API_URL}/cars/import-url`,
+      {
+        method:"POST",
+        headers:{
+          "Content-Type":"application/json"
+        },
+        body:JSON.stringify({
+          url:importUrl
+        })
+      }
+    )
+
+    setImportUrl("")
+
+    await loadDashboard()
+  }
+
+  const analyzeCar = async () => {
     setLoading(true)
 
-    await fetch(`${API_URL}/cars/analyze`,{
-      method:"POST",
-      headers:{
-        "Content-Type":"application/json"
+    await fetch(`${API_URL}/cars/analyze`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
       },
-      body:JSON.stringify({
+      body: JSON.stringify({
         ...formData,
-        year:Number(formData.year),
-        km:Number(formData.km),
-        price:Number(formData.price)
+        year: Number(formData.year),
+        km: Number(formData.km),
+        price: Number(formData.price)
       })
     })
 
     await loadDashboard()
-
     setLoading(false)
 
     setFormData({
-      brand:"",
-      model:"",
-      year:"",
-      km:"",
-      price:"",
-      image_url:""
+      brand: "",
+      model: "",
+      year: "",
+      km: "",
+      price: "",
+      image_url: ""
     })
   }
 
-  const deleteCar = async(id)=>{
-
-    await fetch(`${API_URL}/cars/${id}`,{
-      method:"DELETE"
-    })
-
+  const deleteCar = async (id) => {
+    await fetch(`${API_URL}/cars/${id}`, { method: "DELETE" })
     await loadDashboard()
   }
 
-  const toggleFavorite = async(id)=>{
-
-    await fetch(`${API_URL}/cars/${id}/favorite`,{
-      method:"PATCH"
-    })
-
+  const toggleFavorite = async (id) => {
+    await fetch(`${API_URL}/cars/${id}/favorite`, { method: "PATCH" })
     await loadDashboard()
   }
 
-  const toggleSold = async(id)=>{
-
-    await fetch(`${API_URL}/cars/${id}/sold`,{
-      method:"PATCH"
-    })
-
+  const toggleSold = async (id) => {
+    await fetch(`${API_URL}/cars/${id}/sold`, { method: "PATCH" })
     await loadDashboard()
   }
 
-  const deleteAllCars = async () => {
+  const filteredCars = useMemo(() => {
+    let result = [...cars]
 
-    const confirmDelete =
-      window.confirm(
-        "¿Eliminar TODOS los coches?"
-      )
-
-    if(!confirmDelete){
-      return
-    }
-
-    await fetch(`${API_URL}/cars`,{
-      method:"DELETE"
-    })
-
-    await loadDashboard()
-  }
-
-  const exportCSV = () => {
-    const rows = [
-      ["Marca","Modelo","Año","KM","Precio","Mercado","Gastos","Beneficio","ROI","Score","Recomendacion"]
-    ]
-
-    filteredCars.forEach((car) => {
-      rows.push([
-        car.brand,
-        car.model,
-        car.year,
-        car.km,
-        car.price,
-        car.estimated_market_price,
-        car.estimated_expenses,
-        car.estimated_net_profit,
-        car.roi,
-        car.score,
-        car.recommendation
-      ])
-    })
-
-    const csv = rows.map(row => row.join(";")).join("\n")
-    const blob = new Blob([csv], { type: "text/csv" })
-    const url = window.URL.createObjectURL(blob)
-
-    const a = document.createElement("a")
-    a.href = url
-    a.download = "coches-saas-informe.csv"
-    a.click()
-  }
-
-  const filteredCars = useMemo(()=>{
-
-    let result=[...cars]
-
-    if(search){
-
-      result=result.filter((car)=>
+    if (search) {
+      result = result.filter((car) =>
         `${car.brand} ${car.model}`
           .toLowerCase()
           .includes(search.toLowerCase())
       )
     }
 
-    if(onlyHotDeals){
-      result=result.filter((car)=>car.is_hot_deal)
-    }
+    if (onlyHotDeals) result = result.filter((car) => car.is_hot_deal)
+    if (onlyPremium) result = result.filter((car) => car.is_premium_brand)
+    if (onlyFavorites) result = result.filter((car) => car.is_favorite)
+    if (hideSold) result = result.filter((car) => !car.is_sold)
 
-    result.sort((a,b)=>{
-
-      if(sortBy==="score"){
-        return b.score-a.score
-      }
-
-      if(sortBy==="profit"){
-        return b.estimated_net_profit-a.estimated_net_profit
-      }
-
-      if(sortBy==="roi"){
-        return b.roi-a.roi
-      }
-
+    result.sort((a, b) => {
+      if (sortBy === "score") return b.score - a.score
+      if (sortBy === "profit") return b.estimated_net_profit - a.estimated_net_profit
+      if (sortBy === "roi") return b.roi - a.roi
       return 0
     })
 
     return result
+  }, [cars, search, sortBy, onlyHotDeals, onlyPremium, onlyFavorites, hideSold])
 
-  },[
-    cars,
-    search,
-    sortBy,
-    onlyHotDeals
-  ])
+  const adminStats = {
+    avgRoi: cars.length
+      ? (cars.reduce((sum, car) => sum + (car.roi || 0), 0) / cars.length).toFixed(2)
+      : 0,
+    sold: cars.filter(car => car.is_sold).length,
+    favorites: cars.filter(car => car.is_favorite).length,
+    hotPercent: cars.length
+      ? ((cars.filter(car => car.is_hot_deal).length / cars.length) * 100).toFixed(1)
+      : 0,
+    premium: cars.filter(car => car.is_premium_brand).length,
+    bestProfit: cars.length
+      ? Math.max(...cars.map(car => car.estimated_net_profit || 0))
+      : 0
+  }
 
-  const profitData =
-    filteredCars.map((car)=>({
-      name:car.brand,
-      profit:car.estimated_net_profit
-    }))
-
-  const scoreData=[
-    {
-      name:"Hot Deals",
-      value:
-        filteredCars.filter(c=>c.is_hot_deal).length
-    },
-    {
-      name:"Normales",
-      value:
-        filteredCars.filter(c=>!c.is_hot_deal).length
-    }
-  ]
-
-  return(
-
+  return (
     <div className="app">
-
       <div className="hero">
-
         <div className="hero-top">
+          <h1>🚘 Coches SaaS</h1>
+          <div className="hero-badge">🔥 MOTOR AUTOMOTRIZ IA</div>
+        </div>
+        <p>Inteligencia artificial para compraventa profesional</p>
+      </div>
 
-          <h1>
-            🚘 Coches SaaS
-          </h1>
+      <div className="import-box">
 
-          <div className="hero-badge">
-            🔥 MOTOR AUTOMOTRIZ IA
-          </div>
+        <h2>
+          🔗 Importador automático IA
+        </h2>
+
+        <div className="import-row">
+
+          <input
+            className="import-input"
+            placeholder="Pega URL AutoScout24 / Mobile.de"
+            value={importUrl}
+            onChange={(e)=>
+              setImportUrl(e.target.value)
+            }
+          />
+
+          <button
+            className="import-btn"
+            onClick={importFromUrl}
+          >
+            🚀 Importar
+          </button>
 
         </div>
-
-        <p>
-          Inteligencia artificial para
-          compraventa profesional
-        </p>
 
       </div>
 
       <div className="form-grid">
-
-        <input
-          placeholder="Marca"
-          value={formData.brand}
-          onChange={(e)=>
-            setFormData({
-              ...formData,
-              brand:e.target.value
-            })
-          }
-        />
-
-        <input
-          placeholder="Modelo"
-          value={formData.model}
-          onChange={(e)=>
-            setFormData({
-              ...formData,
-              model:e.target.value
-            })
-          }
-        />
-
-        <input
-          placeholder="Año"
-          value={formData.year}
-          onChange={(e)=>
-            setFormData({
-              ...formData,
-              year:e.target.value
-            })
-          }
-        />
-
-        <input
-          placeholder="KM"
-          value={formData.km}
-          onChange={(e)=>
-            setFormData({
-              ...formData,
-              km:e.target.value
-            })
-          }
-        />
-
-        <input
-          placeholder="Precio"
-          value={formData.price}
-          onChange={(e)=>
-            setFormData({
-              ...formData,
-              price:e.target.value
-            })
-          }
-        />
-
-        <input
-          placeholder="URL imagen"
-          value={formData.image_url}
-          onChange={(e)=>
-            setFormData({
-              ...formData,
-              image_url:e.target.value
-            })
-          }
-        />
-
+        <input placeholder="Marca" value={formData.brand} onChange={(e) => setFormData({ ...formData, brand: e.target.value })} />
+        <input placeholder="Modelo" value={formData.model} onChange={(e) => setFormData({ ...formData, model: e.target.value })} />
+        <input placeholder="Año" value={formData.year} onChange={(e) => setFormData({ ...formData, year: e.target.value })} />
+        <input placeholder="KM" value={formData.km} onChange={(e) => setFormData({ ...formData, km: e.target.value })} />
+        <input placeholder="Precio" value={formData.price} onChange={(e) => setFormData({ ...formData, price: e.target.value })} />
+        <input placeholder="URL imagen" value={formData.image_url} onChange={(e) => setFormData({ ...formData, image_url: e.target.value })} />
       </div>
 
-      <button
-        className="analyze-btn"
-        onClick={analyzeCar}
-      >
-        {
-          loading
-            ? "ANALIZANDO..."
-            : "🚀 ANALIZAR COCHE"
-        }
+      <button className="analyze-btn" onClick={analyzeCar}>
+        {loading ? "ANALIZANDO..." : "🚀 ANALIZAR COCHE"}
       </button>
 
       <div className="stats-grid">
-
-        <div className="stat-card">
-          <h3>🚗 Coches</h3>
-          <h2>{stats.total_cars}</h2>
-        </div>
-
-        <div className="stat-card">
-          <h3>🔥 Hot Deals</h3>
-          <h2>{stats.hot_deals_count}</h2>
-        </div>
-
-        <div className="stat-card">
-          <h3>💰 Profit</h3>
-          <h2>{stats.total_profit} €</h2>
-        </div>
-
-        <div className="stat-card">
-          <h3>📈 IA Score</h3>
-          <h2>{stats.avg_score}</h2>
-        </div>
-
+        <div className="stat-card"><h3>🚗 Coches</h3><h2>{stats.total_cars || 0}</h2></div>
+        <div className="stat-card"><h3>🔥 Hot Deals</h3><h2>{stats.hot_deals_count || 0}</h2></div>
+        <div className="stat-card"><h3>💰 Profit</h3><h2>{stats.total_profit || 0} €</h2></div>
+        <div className="stat-card"><h3>📈 IA Score</h3><h2>{stats.avg_score || 0}</h2></div>
       </div>
 
-      <Analytics cars={filteredCars} />
+      <div className="admin-panel">
+        <h2>📊 Panel Admin IA</h2>
+
+        <div className="admin-grid">
+          <div className="admin-card">
+            <span>ROI medio</span>
+            <strong>{adminStats.avgRoi}%</strong>
+          </div>
+
+          <div className="admin-card">
+            <span>Vendidos</span>
+            <strong>{adminStats.sold}</strong>
+          </div>
+
+          <div className="admin-card">
+            <span>Favoritos</span>
+            <strong>{adminStats.favorites}</strong>
+          </div>
+
+          <div className="admin-card">
+            <span>% Hot Deals</span>
+            <strong>{adminStats.hotPercent}%</strong>
+          </div>
+
+          <div className="admin-card">
+            <span>Premium</span>
+            <strong>{adminStats.premium}</strong>
+          </div>
+
+          <div className="admin-card">
+            <span>Mejor profit</span>
+            <strong>{adminStats.bestProfit} €</strong>
+          </div>
+        </div>
+      </div>
+
+      <div className="filters-row">
+        <button className={`filter-chip ${onlyHotDeals ? "active" : ""}`} onClick={() => setOnlyHotDeals(!onlyHotDeals)}>🔥 Gangas</button>
+        <button className={`filter-chip ${onlyPremium ? "active" : ""}`} onClick={() => setOnlyPremium(!onlyPremium)}>👑 Premium</button>
+        <button className={`filter-chip ${onlyFavorites ? "active" : ""}`} onClick={() => setOnlyFavorites(!onlyFavorites)}>⭐ Favoritos</button>
+        <button className={`filter-chip ${hideSold ? "active" : ""}`} onClick={() => setHideSold(!hideSold)}>🚫 Ocultar vendidos</button>
+      </div>
 
       <div className="toolbar">
+        <input className="search-input" placeholder="Buscar marca o modelo..." value={search} onChange={(e) => setSearch(e.target.value)} />
 
-        <input
-          className="search-input"
-          placeholder="Buscar marca o modelo..."
-          value={search}
-          onChange={(e)=>
-            setSearch(e.target.value)
-          }
-        />
-
-        <select
-          className="sort-select"
-          value={sortBy}
-          onChange={(e)=>
-            setSortBy(e.target.value)
-          }
-        >
-
-          <option value="score">
-            Ordenar por puntuación
-          </option>
-
-          <option value="profit">
-            Ordenar por beneficio
-          </option>
-
-          <option value="roi">
-            Ordenar por ROI
-          </option>
-
+        <select className="sort-select" value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
+          <option value="score">Ordenar por puntuación</option>
+          <option value="profit">Ordenar por beneficio</option>
+          <option value="roi">Ordenar por ROI</option>
         </select>
-
-        <button
-          className="export-btn"
-          onClick={exportCSV}
-        >
-          📤 Exportar CSV
-        </button>
-
-        <button
-          className="delete-btn"
-          onClick={deleteAllCars}
-        >
-          🧨 Reset DB
-        </button>
-
-        <button
-          className={`hot-filter ${
-            onlyHotDeals ? "active" : ""
-          }`}
-          onClick={()=>
-            setOnlyHotDeals(!onlyHotDeals)
-          }
-        >
-          🔥 Hot Deals
-        </button>
-
-      </div>
-
-      <div className="charts-grid">
-
-        <div className="chart-card">
-
-          <h2>
-            📈 Beneficio por coche
-          </h2>
-
-          <ResponsiveContainer
-            width="100%"
-            height={320}
-          >
-
-            <BarChart data={profitData}>
-
-              <XAxis dataKey="name" />
-
-              <YAxis />
-
-              <Tooltip />
-
-              <Bar
-                dataKey="profit"
-                fill="#59e65c"
-                radius={[10,10,0,0]}
-              />
-
-            </BarChart>
-
-          </ResponsiveContainer>
-
-        </div>
-
-        <div className="chart-card">
-
-          <h2>
-            🔥 Hot Deals IA
-          </h2>
-
-          <ResponsiveContainer
-            width="100%"
-            height={320}
-          >
-
-            <PieChart>
-
-              <Pie
-                data={scoreData}
-                dataKey="value"
-                outerRadius={120}
-                label
-              >
-
-                <Cell fill="#59e65c" />
-
-                <Cell fill="#ff6666" />
-
-              </Pie>
-
-              <Tooltip />
-
-            </PieChart>
-
-          </ResponsiveContainer>
-
-        </div>
-
       </div>
 
       <div className="cars-grid">
-
-        {filteredCars.map((car)=>(
-
-          <div
-            key={car.id}
-            className={`car-card ${
-              car.is_hot_deal ? "hot" : ""
-            }`}
-          >
-
-            <img
-              src={car.image_url}
-              alt=""
-            />
+        {filteredCars.map((car) => (
+          <div key={car.id} className={`car-card ${car.is_hot_deal ? "hot" : ""}`}>
+            <img src={car.image_url} alt="" />
 
             <div className="car-content">
-
               <div className="card-top">
-
-                <h2>
-                  {car.brand} {car.model}
-                </h2>
-
-                {car.is_favorite &&(
-
-                  <div className="favorite-badge">
-                    ⭐ FAVORITO
-                  </div>
-
-                )}
-
+                <h2>{car.brand} {car.model}</h2>
+                {car.is_favorite && <div className="favorite-badge">⭐ FAVORITO</div>}
               </div>
 
-              {car.is_sold &&(
-
-                <div className="sold-badge">
-                  VENDIDO
-                </div>
-
-              )}
+              {car.is_sold && <div className="sold-badge">VENDIDO</div>}
 
               <p>📅 {car.year}</p>
-
               <p>🛣️ {car.km} km</p>
-
               <p>💶 {car.price} €</p>
 
               <hr />
 
-              <p>
-                🏪 Mercado:
-                {" "}
-                {car.estimated_market_price} €
-              </p>
+              <p>🏪 Mercado: {car.estimated_market_price} €</p>
+              <p>🛠️ Gastos: {car.estimated_expenses} €</p>
 
-              <p>
-                🛠️ Gastos:
-                {" "}
-                {car.estimated_expenses} €
-              </p>
+              <h3 className="profit">💰 {car.estimated_net_profit} €</h3>
 
-              <h3 className="profit">
-                💰 {car.estimated_net_profit} €
-              </h3>
-
-              <p>
-                📈 ROI:
-                {" "}
-                {car.roi} %
-              </p>
+              <p>📈 ROI: {car.roi} %</p>
 
               <div className="score-box">
                 ⭐ {car.score}
@@ -570,45 +293,48 @@ function App() {
                 {car.recommendation}
               </div>
 
-              <div className="card-buttons">
+              <div className="visual-box">
 
-                <button
-                  className="favorite-btn"
-                  onClick={()=>
-                    toggleFavorite(car.id)
-                  }
-                >
-                  ⭐ Favorito
-                </button>
+                <h4>
+                  🧠 IA VISUAL
+                </h4>
 
-                <button
-                  className="sold-btn"
-                  onClick={()=>
-                    toggleSold(car.id)
-                  }
-                >
-                  ✅ Vendido
-                </button>
+                <div className="visual-grid">
+
+                  <div className="visual-item">
+                    🎨 {car.visual_color}
+                  </div>
+
+                  <div className="visual-item">
+                    🔍 {car.visual_status}
+                  </div>
+
+                  <div className="visual-item">
+                    ⚠️ {car.visual_risk}
+                  </div>
+
+                  <div className="visual-item">
+                    👁️ Imagen analizada
+                  </div>
+
+                </div>
+
+                <div className="visual-score">
+                  {car.visual_score}/100
+                </div>
 
               </div>
 
-              <button
-                className="delete-btn"
-                onClick={()=>
-                  deleteCar(car.id)
-                }
-              >
-                🗑 Eliminar
-              </button>
+              <div className="card-buttons">
+                <button className="favorite-btn" onClick={() => toggleFavorite(car.id)}>⭐ Favorito</button>
+                <button className="sold-btn" onClick={() => toggleSold(car.id)}>✅ Vendido</button>
+              </div>
 
+              <button className="delete-btn" onClick={() => deleteCar(car.id)}>🗑 Eliminar</button>
             </div>
-
           </div>
-
         ))}
-
       </div>
-
     </div>
   )
 }

@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Depends
+from app.scraper import scrape_car_url
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 
@@ -206,3 +207,11 @@ def toggle_sold(car_id: int, db: Session = Depends(get_db)):
     db.refresh(car)
 
     return {"message": "Estado vendido actualizado", "is_sold": car.is_sold}
+
+@app.post("/cars/import-url")
+def import_car_url(data: dict, db: Session = Depends(get_db)):
+    url = data.get("url", "")
+
+    scraped_data = scrape_car_url(url)
+
+    return analyze_car(scraped_data, db)

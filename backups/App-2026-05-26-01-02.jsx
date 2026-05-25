@@ -15,7 +15,6 @@ export default function App() {
   const [search, setSearch] = useState("")
   const [onlyDeals, setOnlyDeals] = useState(false)
   const [sortBy, setSortBy] = useState("roi")
-  const [globalSearch, setGlobalSearch] = useState("")
   const [minRoi, setMinRoi] = useState(15)
   const [minProfit, setMinProfit] = useState(3000)
   const [mode, setMode] = useState("pro")
@@ -28,7 +27,7 @@ export default function App() {
   const [leadEmail, setLeadEmail] = useState("")
   const [leads, setLeads] = useState([])
   const [watchlist, setWatchlist] = useState([])
-  
+  const [globalSearch, setGlobalSearch] = useState("")
   const [copilotInput, setCopilotInput] = useState("")
   const [copilotMessages, setCopilotMessages] = useState([
     {
@@ -123,21 +122,6 @@ export default function App() {
     localStorage.clear()
     setUser(null)
   }
-
-
-  const loadPremiumDemo = async () => {
-    setLoading(true)
-
-    await fetch(`${API_URL}/demo/load-premium`, {
-      method: "POST"
-    })
-
-    await loadCars()
-
-    setLoading(false)
-    alert("🚀 Demo premium cargada")
-  }
-
 
   const importCar = async () => {
     if (!url) return
@@ -277,32 +261,6 @@ export default function App() {
     ])
   }
 
-
-  const exportFullBackup = () => {
-
-    const payload = {
-      exported_at: new Date().toISOString(),
-      cars,
-      notes: dealNotes,
-      favorites,
-      watchlist
-    }
-
-    const blob = new Blob(
-      [JSON.stringify(payload, null, 2)],
-      {
-        type: "application/json"
-      }
-    )
-
-    const url = window.URL.createObjectURL(blob)
-
-    const a = document.createElement("a")
-    a.href = url
-    a.download = "coches-saas-backup.json"
-    a.click()
-  }
-
   const exportCSV = () => {
     const rows = [
       ["Marca","Modelo","Año","KM","Precio","ROI","Beneficio","Recomendacion"]
@@ -367,16 +325,6 @@ ${cars.some(c => (c.roi || 0) >= 20) ? "Priorizar operaciones con ROI superior a
       result = result.filter((car) =>
         (car.roi || 0) >= minRoi &&
         (car.estimated_net_profit || 0) >= minProfit
-      )
-    }
-
-    if (globalSearch.trim()) {
-      const q = globalSearch.toLowerCase()
-
-      result = result.filter((car) =>
-        `${car.brand} ${car.model} ${car.year}`
-          .toLowerCase()
-          .includes(q)
       )
     }
 
@@ -665,15 +613,6 @@ ${cars.some(c => (c.roi || 0) >= 20) ? "Priorizar operaciones con ROI superior a
         </section>
 
 
-        
-        <button
-          className="demo-loader-btn"
-          onClick={loadPremiumDemo}
-        >
-          🚀 Cargar Demo Premium
-        </button>
-
-
         <section className="import-box">
           <input
             value={url}
@@ -732,28 +671,7 @@ ${cars.some(c => (c.roi || 0) >= 20) ? "Priorizar operaciones con ROI superior a
           </button>
 
         </section>
-
-
-        
-        <section className="search-engine">
-
-          <h2>🔎 Global Search Engine</h2>
-
-          <input
-            className="search-input"
-            placeholder="Buscar BMW, Porsche, RS6, 2021..."
-            value={globalSearch}
-            onChange={(e) => setGlobalSearch(e.target.value)}
-          />
-
-          <div className="search-results">
-            Resultados encontrados: {filteredCars.length}
-          </div>
-
-        </section>
-
-
-        <section className="controls">
+\n\n        <section className="controls">
           <input
             placeholder="Buscar marca o modelo..."
             value={search}
@@ -1234,39 +1152,6 @@ ${cars.some(c => (c.roi || 0) >= 20) ? "Priorizar operaciones con ROI superior a
               onClick={sendCopilotMessage}
             >
               Enviar
-            </button>
-
-          </div>
-
-        </section>
-
-
-        
-        <section className="backup-center">
-
-          <h2>💾 Database Backup Center</h2>
-
-          <div className="backup-actions">
-
-            <button
-              className="backup-btn backup-blue"
-              onClick={exportFullBackup}
-            >
-              💾 Backup completo
-            </button>
-
-            <button
-              className="backup-btn backup-green"
-              onClick={exportCSV}
-            >
-              📊 Export CSV
-            </button>
-
-            <button
-              className="backup-btn backup-purple"
-              onClick={() => alert("☁️ Cloud sync próximamente")}
-            >
-              ☁️ Cloud Sync
             </button>
 
           </div>
@@ -2747,146 +2632,6 @@ Checklist:\n- Revisar historial de mantenimiento\n- Confirmar kilometraje real\n
 
                   </div>
 
-                  <div className="document-vault">
-
-                    <div className="document-title">
-                      🗂️ Document Vault Pro
-                    </div>
-
-                    <div className="document-grid">
-
-                      <div className="document-item">
-                        <span>Ficha técnica</span>
-                        <strong className="doc-pending">
-                          Pendiente
-                        </strong>
-                      </div>
-
-                      <div className="document-item">
-                        <span>ITV</span>
-                        <strong className="doc-pending">
-                          Revisar
-                        </strong>
-                      </div>
-
-                      <div className="document-item">
-                        <span>Mantenimiento</span>
-                        <strong className="doc-pending">
-                          Solicitar
-                        </strong>
-                      </div>
-
-                      <div className="document-item">
-                        <span>Contrato</span>
-                        <strong className="doc-ok">
-                          Plantilla lista
-                        </strong>
-                      </div>
-
-                    </div>
-
-                    <button
-                      className="document-action"
-                      onClick={() => alert("📁 Carpeta documental preparada")}
-                    >
-                      Preparar carpeta documental
-                    </button>
-
-                  </div>
-
-                  <div className="negotiation-panel">
-
-                    <div className="negotiation-title">
-                      🤝 Negotiation Center Pro
-                    </div>
-
-                    <div className="negotiation-grid">
-
-                      <div className="negotiation-box">
-                        <span>Precio actual</span>
-                        <strong>
-                          {car.price} €
-                        </strong>
-                      </div>
-
-                      <div className="negotiation-box">
-                        <span>Objetivo IA</span>
-                        <strong>
-                          {Math.round((car.price || 0) * 0.92)} €
-                        </strong>
-                      </div>
-
-                      <div className="negotiation-box">
-                        <span>Descuento ideal</span>
-                        <strong>
-                          -8%
-                        </strong>
-                      </div>
-
-                      <div className="negotiation-box">
-                        <span>Margen extra potencial</span>
-                        <strong>
-                          +{Math.round((car.price || 0) * 0.08)} €
-                        </strong>
-                      </div>
-
-                    </div>
-
-                    <div className="negotiation-note">
-                      🤖 Estrategia IA:
-                      iniciar negociación agresiva,
-                      detectar urgencia del vendedor
-                      y buscar reducción mínima del 5-8%.
-                    </div>
-
-                    <button
-                      className="negotiation-btn"
-                      onClick={() => alert("📞 Estrategia de negociación preparada")}
-                    >
-                      Preparar estrategia
-                    </button>
-
-                  </div>
-
-                  <div className="tasks-panel">
-
-                    <div className="tasks-title">
-                      ✅ Follow-up Tasks Pro
-                    </div>
-
-                    <div className="tasks-list">
-
-                      <div className="task-item">
-                        <span>📞 Llamar al vendedor</span>
-                        <span className="task-status">Pendiente</span>
-                      </div>
-
-                      <div className="task-item">
-                        <span>📄 Pedir historial</span>
-                        <span className="task-status">Pendiente</span>
-                      </div>
-
-                      <div className="task-item">
-                        <span>🔍 Reservar inspección</span>
-                        <span className="task-status">Pendiente</span>
-                      </div>
-
-                      <div className="task-item">
-                        <span>💶 Preparar oferta</span>
-                        <span className="task-status">IA Ready</span>
-                      </div>
-
-                    </div>
-
-                    <button
-                      className="task-btn"
-                      onClick={() => alert("✅ Tareas generadas para este coche")}
-                    >
-                      Generar plan de seguimiento
-                    </button>
-
-                  </div>
-
                   <div className="badges">
                     {(car.roi || 0) >= 20 && <span>🔥 SUPER CHOLLO</span>}
                     {(car.km || 0) <= 80000 && <span>🛣️ LOW KM</span>}
@@ -2985,45 +2730,7 @@ Checklist:\n- Revisar historial de mantenimiento\n- Confirmar kilometraje real\n
             )
           })}
         </section>
-      
-      <div className="quick-actions">
-
-        <button
-          className="quick-btn"
-          title="Importar"
-          onClick={importCar}
-        >
-          ➕
-        </button>
-
-        <button
-          className="quick-btn"
-          title="Scanner"
-          onClick={runMarketScanner}
-        >
-          🌍
-        </button>
-
-        <button
-          className="quick-btn"
-          title="Export CSV"
-          onClick={exportCSV}
-        >
-          📦
-        </button>
-
-        <button
-          className="quick-btn"
-          title="Reset"
-          onClick={resetDatabase}
-        >
-          🧨
-        </button>
-
-      </div>
-
-
-    </main>
+      </main>
     </div>
   )
 }

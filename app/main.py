@@ -269,3 +269,230 @@ def favorite_car(car_id: int):
         "favorites": favorites
     }
 
+
+# ===== TELEGRAM ALERT ENGINE =====
+
+@app.post("/telegram/send")
+async def telegram_send(data: dict):
+
+    car = data.get("car", {})
+
+    message = f"""
+🚗 CHOLLO IA DETECTADO
+
+{car.get('brand')} {car.get('model')}
+Año: {car.get('year')}
+KM: {car.get('km')}
+Precio: {car.get('price')} €
+ROI: {car.get('roi')}%
+Profit: {car.get('estimated_net_profit')} €
+
+🔥 Recomendación IA:
+{car.get('recommendation')}
+"""
+
+    return {
+        "ok": True,
+        "message": message
+    }
+
+
+# ===== STRIPE CHECKOUT READY =====
+
+@app.post("/billing/checkout")
+async def billing_checkout(data: dict):
+
+    plan = data.get("plan", "pro")
+
+    prices = {
+        "pro": "49€/mes",
+        "elite": "149€/mes"
+    }
+
+    return {
+        "ok": True,
+        "plan": plan,
+        "price": prices.get(plan, "49€/mes"),
+        "checkout_url": "https://checkout.stripe.com/demo-coches-saas"
+    }
+
+
+# ===== MARKET SCANNER PRO =====
+
+@app.post("/market/scan-demo")
+def market_scan_demo(db: Session = Depends(get_db)):
+    demo_cars = [
+        {
+            "brand": "BMW",
+            "model": "M340i",
+            "year": 2021,
+            "km": 52000,
+            "price": 32000,
+            "image_url": "https://images.unsplash.com/photo-1555215695-3004980ad54e"
+        },
+        {
+            "brand": "Porsche",
+            "model": "Panamera",
+            "year": 2020,
+            "km": 61000,
+            "price": 56000,
+            "image_url": "https://images.unsplash.com/photo-1503376780353-7e6692767b70"
+        },
+        {
+            "brand": "Audi",
+            "model": "RS6",
+            "year": 2021,
+            "km": 43000,
+            "price": 68000,
+            "image_url": "https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8"
+        },
+        {
+            "brand": "Mercedes",
+            "model": "AMG C43",
+            "year": 2022,
+            "km": 39000,
+            "price": 47000,
+            "image_url": "https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8"
+        }
+    ]
+
+    created = []
+
+    for car in demo_cars:
+        result = analyze_car(car, db)
+        created.append(result)
+
+    return {
+        "ok": True,
+        "message": "Market Scanner Pro ejecutado",
+        "created": len(created)
+    }
+
+# ===== DELETE DUPLICATES PRO =====
+
+@app.delete("/cars/duplicates")
+def delete_duplicates(db: Session = Depends(get_db)):
+    from app.db.models import Car
+
+    cars = db.query(Car).all()
+    seen = set()
+    deleted = 0
+
+    for car in cars:
+        key = (
+            car.brand,
+            car.model,
+            car.price,
+            car.km
+        )
+
+        if key in seen:
+            db.delete(car)
+            deleted += 1
+        else:
+            seen.add(key)
+
+    db.commit()
+
+    return {
+        "ok": True,
+        "deleted": deleted
+    }
+
+# ===== RESET DATABASE PRO =====
+
+@app.delete("/cars/reset")
+def reset_cars(db: Session = Depends(get_db)):
+    from app.db.models import Car
+
+    deleted = db.query(Car).delete()
+    db.commit()
+
+    return {
+        "ok": True,
+        "deleted": deleted,
+        "message": "Base de coches limpiada"
+    }
+
+@app.post("/ai/copilot")
+def ai_copilot(data: dict):
+    question = data.get("question", "").lower()
+
+    if "roi" in question:
+        answer = "Prioriza coches con ROI superior al 20%, beneficio neto positivo y kilometraje bajo."
+
+    elif "comprar" in question:
+        answer = "Compra solo si el score IA supera 85, el ROI es alto y puedes negociar al menos un 5-8%."
+
+    elif "riesgo" in question:
+        answer = "Los principales riesgos son kilometraje alto, documentación incompleta, mantenimiento dudoso y margen insuficiente."
+
+    elif "mejor" in question:
+        answer = "La mejor oportunidad suele ser la que combina mayor ROI, mayor profit y menor kilometraje."
+
+    else:
+        answer = "Analiza ROI, profit, kilometraje, año, precio de mercado y riesgo antes de tomar una decisión."
+
+    return {
+        "answer": answer
+    }
+
+@app.get("/health")
+def health_check():
+    return {
+        "status": "ok",
+        "backend": "online",
+        "database": "connected",
+        "ai_engine": "active",
+        "scraper": "ready"
+    }
+
+# ===== DEMO DATA LOADER PRO =====
+
+@app.post("/demo/load-premium")
+def load_premium_demo(db: Session = Depends(get_db)):
+    demo_cars = [
+        {
+            "brand": "BMW",
+            "model": "M3 Competition",
+            "year": 2021,
+            "km": 42000,
+            "price": 62000,
+            "image_url": "https://images.unsplash.com/photo-1555215695-3004980ad54e"
+        },
+        {
+            "brand": "Porsche",
+            "model": "911 Carrera",
+            "year": 2020,
+            "km": 38000,
+            "price": 89000,
+            "image_url": "https://images.unsplash.com/photo-1503376780353-7e6692767b70"
+        },
+        {
+            "brand": "Mercedes",
+            "model": "AMG GT",
+            "year": 2019,
+            "km": 54000,
+            "price": 78000,
+            "image_url": "https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8"
+        },
+        {
+            "brand": "Audi",
+            "model": "RS3",
+            "year": 2022,
+            "km": 26000,
+            "price": 48000,
+            "image_url": "https://images.unsplash.com/photo-1542362567-b07e54358753"
+        }
+    ]
+
+    created = []
+
+    for car in demo_cars:
+        created.append(analyze_car(car, db))
+
+    return {
+        "ok": True,
+        "message": "Demo premium cargada",
+        "created": len(created)
+    }

@@ -1,12 +1,10 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy.orm import Session
 
-from app.database import Base
-from app.database import engine
-
-from app.routes.car_routes import router as car_router
-
-Base.metadata.create_all(bind=engine)
+from app.db.database import SessionLocal
+from app.db.init_db import init_db
+from app.db.crud import create_car, get_all_cars
 
 app = FastAPI()
 
@@ -18,4 +16,115 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(car_router)
+init_db()
+
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+@app.get("/")
+def root():
+    return {"message": "Coches SaaS API funcionando"}
+
+@app.get("/cars/dashboard")
+def dashboard(db: Session = Depends(get_db)):
+    cars = get_all_cars(db)
+
+    total_profit = sum(car.estimated_net_profit or 0 for car in cars)
+
+    avg_score = 0
+    if cars:
+        avg_score = sum(car.score or 0 for car in cars) / len(cars)
+
+    hot_deals = [car for car in cars if car.is_hot_deal]
+
+    return {
+        "stats": {
+            "total_cars": len(cars),
+            "hot_deals_count": len(hot_deals),
+            "avg_score": round(avg_score, 2),
+            "total_profit": round(total_profit, 2)
+        },
+        "top_deals": cars,
+        "hot_deals": cars
+    }
+
+@app.post("/cars/analyze")
+def analyze_car(data: dict, db: Session = Depends(get_db)):
+    price = float(data["price"])
+    km = int(data["km"])
+    year = int(data["year"])
+    brand = data["brand"].upper()
+
+    estimated_market_price = round(price * 1.35, 2)
+    expenses = round(1500 + (km * 0.03), 2)
+    estimated_profit = round(estimated_market_price - price - expenses, 2)
+    roi = round((estimated_profit / price) * 100, 2)
+
+    score = 50
+
+    if estimated_profit > 7000:
+        score += 25
+    elif estimated_profit > 4000:
+        score += 18
+    elif estimated_profit > 2000:
+        score += 10
+
+    if roi > 20:
+        score += 20
+    elif roi > 12:
+        score += 14
+    elif roi > 8:
+        score += 8
+
+    premium_brands = ["BMW", "AUDI", "MERCEDES", "PORSCHE"]
+
+    if brand in premium_brands:
+        score += 10
+
+    if km < 60000:
+        score += 10
+    elif km < 100000:
+        score += 6
+
+    if year >= 2020:
+        score += 8
+
+    score = min(score, 100)
+
+    recommendation = "DESCARTAR"
+    if score >= 85:
+        recommendation = "COMPRA PRIORITARIA 🚀"
+    elif score >= 70:
+        recommendation = "MUY INTERESANTE 🔥"
+    elif score >= 55:
+        recommendation = "ANALIZAR CON CALMA 👀"
+
+    car_data = {
+        "brand": data["brand"],
+        "model": data["model"],
+        "year": year,
+        "km": km,
+        "price": price,
+        "image_url": data["image_url"],
+        "estimated_market_price": estimated_market_price,
+        "estimated_expenses": expenses,
+        "estimated_net_profit": estimated_profit,
+        "roi": roi,
+        "score": score,
+        "recommendation": recommendation,
+        "is_hot_deal": score >= 80,
+        "is_premium_brand": brand in premium_brands
+    }
+
+    saved_car = create_car(db, car_data)
+
+    return {
+        "message": "Coche analizado y guardado",
+        "id": saved_car.id,
+        "score": score,
+        "recommendation": recommendation
+    }

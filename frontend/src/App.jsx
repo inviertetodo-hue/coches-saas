@@ -1,346 +1,193 @@
-import { useEffect, useState } from "react";
-import { API_URL } from "./config";
+import "./styles.css"
+import { useEffect, useMemo, useState } from "react"
 
-function App() {
+const API_URL = "http://127.0.0.1:8000"
 
-  const [dashboard, setDashboard] = useState(null);
+export default function App() {
+  const [cars, setCars] = useState([])
+  const [stats, setStats] = useState({})
+  const [loading, setLoading] = useState(false)
+  const [message, setMessage] = useState("")
 
-  const [form, setForm] = useState({
-    brand: "",
-    model: "",
-    year: "",
-    km: "",
-    price: "",
-    image_url: ""
-  });
+  const [brand, setBrand] = useState("")
+  const [model, setModel] = useState("")
+  const [year, setYear] = useState("")
+  const [km, setKm] = useState("")
+  const [price, setPrice] = useState("")
+  const [imageUrl, setImageUrl] = useState("")
 
-  const loadDashboard = async () => {
-    const response = await fetch(`${API_URL}/cars/dashboard`);
-    const data = await response.json();
-    setDashboard(data);
-  };
+  const [search, setSearch] = useState("")
+  const [sortBy, setSortBy] = useState("score")
 
-  useEffect(() => {
-    loadDashboard();
-  }, []);
-
-  const analyzeCar = async () => {
-
-    await fetch(`${API_URL}/cars/`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        brand: form.brand,
-        model: form.model,
-        year: Number(form.year),
-        km: Number(form.km),
-        price: Number(form.price),
-        image_url: form.image_url
-      })
-    });
-
-    setForm({
-      brand: "",
-      model: "",
-      year: "",
-      km: "",
-      price: "",
-      image_url: ""
-    });
-
-    await loadDashboard();
-  };
-
-  if (!dashboard) {
-    return (
-      <div style={loadingStyle}>
-        Cargando IA...
-      </div>
-    );
+  async function loadDashboard() {
+    const res = await fetch(`${API_URL}/cars/dashboard`)
+    const data = await res.json()
+    setCars(data.hot_deals || data.top_deals || [])
+    setStats(data.stats || {})
   }
 
-  const stats = dashboard.stats || {};
-  const cars = dashboard.top_deals || [];
+  useEffect(() => {
+    loadDashboard().catch(() => setMessage("No puedo cargar el backend"))
+  }, [])
+
+  async function analyzeCar() {
+    setLoading(true)
+    setMessage("Analizando coche...")
+
+    try {
+      const res = await fetch(`${API_URL}/cars/analyze`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          brand,
+          model,
+          year: Number(year),
+          km: Number(km),
+          price: Number(price),
+          image_url: imageUrl,
+        }),
+      })
+
+      const result = await res.json()
+
+      if (!res.ok) {
+        throw new Error(JSON.stringify(result))
+      }
+
+      setMessage(`✅ Guardado: ${result.recommendation || "analizado"}`)
+
+      setBrand("")
+      setModel("")
+      setYear("")
+      setKm("")
+      setPrice("")
+      setImageUrl("")
+
+      await loadDashboard()
+    } catch (err) {
+      console.error(err)
+      setMessage("❌ Error guardando coche. Mira backend.")
+    }
+
+    setLoading(false)
+      window.location.reload()
+  }
+
+  const filteredCars = useMemo(() => {
+    let result = [...cars]
+
+    if (search) {
+      result = result.filter((car) =>
+        `${car.brand} ${car.model}`.toLowerCase().includes(search.toLowerCase())
+      )
+    }
+
+    if (sortBy === "score") result.sort((a, b) => b.score - a.score)
+    if (sortBy === "profit") result.sort((a, b) => b.estimated_net_profit - a.estimated_net_profit)
+    if (sortBy === "roi") result.sort((a, b) => b.roi - a.roi)
+
+    return result
+  }, [cars, search, sortBy])
 
   return (
-    <div style={pageStyle}>
-
-      <h1 style={titleStyle}>🚗 Coches SaaS</h1>
-
-      <p style={subtitleStyle}>
-        IA profesional de compraventa
-      </p>
-
-      <div style={formContainerStyle}>
-
-        <input
-          style={inputStyle}
-          placeholder="Marca"
-          value={form.brand}
-          onChange={(e) =>
-            setForm({ ...form, brand: e.target.value })
-          }
-        />
-
-        <input
-          style={inputStyle}
-          placeholder="Modelo"
-          value={form.model}
-          onChange={(e) =>
-            setForm({ ...form, model: e.target.value })
-          }
-        />
-
-        <input
-          style={inputStyle}
-          placeholder="Año"
-          value={form.year}
-          onChange={(e) =>
-            setForm({ ...form, year: e.target.value })
-          }
-        />
-
-        <input
-          style={inputStyle}
-          placeholder="KM"
-          value={form.km}
-          onChange={(e) =>
-            setForm({ ...form, km: e.target.value })
-          }
-        />
-
-        <input
-          style={inputStyle}
-          placeholder="Precio"
-          value={form.price}
-          onChange={(e) =>
-            setForm({ ...form, price: e.target.value })
-          }
-        />
-
-        <input
-          style={inputStyle}
-          placeholder="URL imagen"
-          value={form.image_url}
-          onChange={(e) =>
-            setForm({ ...form, image_url: e.target.value })
-          }
-        />
-
-        <button
-          style={buttonStyle}
-          onClick={analyzeCar}
-        >
-          🚀 ANALIZAR COCHE
-        </button>
-
+    <div style={{ minHeight: "100vh", padding: 30, color: "white" }}>
+      <div className="topbar">
+        <div>
+          <div className="logo">🚗 Coches SaaS</div>
+          <div className="subtitle">Inteligencia artificial para compraventa profesional</div>
+        </div>
+        <div className="hot">🔥 MOTOR AUTOMOTRIZ IA</div>
       </div>
 
-      <div style={statsGridStyle}>
-
-        <div style={statCardStyle}>
-          🚘 Coches: {stats.total_cars}
-        </div>
-
-        <div style={statCardStyle}>
-          🔥 Hot Deals: {stats.hot_deals_count}
-        </div>
-
-        <div style={statCardStyle}>
-          💰 Profit: {stats.total_profit} €
-        </div>
-
-        <div style={statCardStyle}>
-          📈 Score medio: {stats.avg_score}
-        </div>
-
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 14, marginBottom: 20 }}>
+        <input placeholder="Marca" value={brand} onChange={(e)=>setBrand(e.target.value)} />
+        <input placeholder="Modelo" value={model} onChange={(e)=>setModel(e.target.value)} />
+        <input placeholder="Año" value={year} onChange={(e)=>setYear(e.target.value)} />
+        <input placeholder="KM" value={km} onChange={(e)=>setKm(e.target.value)} />
+        <input placeholder="Precio" value={price} onChange={(e)=>setPrice(e.target.value)} />
+        <input placeholder="URL imagen" value={imageUrl} onChange={(e)=>setImageUrl(e.target.value)} />
       </div>
 
-      <div style={carsGridStyle}>
+      <button
+        onClick={analyzeCar}
+        disabled={loading}
+        style={{
+          background: "#22c55e",
+          border: "none",
+          padding: 20,
+          borderRadius: 18,
+          color: "white",
+          fontSize: 24,
+          fontWeight: "bold",
+          cursor: "pointer",
+          marginBottom: 15,
+        }}
+      >
+        {loading ? "ANALIZANDO..." : "🚀 ANALIZAR COCHE"}
+      </button>
 
-        {cars.map((car) => (
+      {message && <div style={{ marginBottom: 25, fontSize: 20, fontWeight: "bold" }}>{message}</div>}
 
-          <div key={car.id} style={cardStyle}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 20, marginBottom: 35 }}>
+        <StatCard title="🚘 Coches" value={stats.total_cars || 0} />
+        <StatCard title="🔥 Hot Deals" value={stats.hot_deals_count || 0} />
+        <StatCard title="💰 Beneficio" value={`${stats.total_profit || 0} €`} />
+        <StatCard title="📈 Score IA" value={stats.avg_score || 0} />
+      </div>
 
-            {car.is_hot_deal && (
-              <div style={hotDealStyle}>
-                🔥 HOT DEAL IA
-              </div>
-            )}
+      <div style={{ display: "flex", gap: 20, marginBottom: 35 }}>
+        <input placeholder="Buscar marca o modelo..." value={search} onChange={(e)=>setSearch(e.target.value)} style={{ flex: 1 }} />
+        <select value={sortBy} onChange={(e)=>setSortBy(e.target.value)}>
+          <option value="score">Ordenar por score</option>
+          <option value="profit">Ordenar por beneficio</option>
+          <option value="roi">Ordenar por ROI</option>
+        </select>
+      </div>
 
-            <img
-              src={car.image_url}
-              style={imageStyle}
-            />
-
-            <h2>
-              {car.brand} {car.model}
-            </h2>
-
-            <p>📅 {car.year}</p>
-            <p>🛣 {car.km} km</p>
-            <p>💵 {car.price} €</p>
-
-            <hr />
-
-            <p>
-              🏷 Mercado:
-              {" "}
-              {car.estimated_market_price} €
-            </p>
-
-            <p>
-              💸 Gastos:
-              {" "}
-              {car.estimated_expenses} €
-            </p>
-
-            <h3 style={profitStyle}>
-              🤑 Profit:
-              {" "}
-              {car.estimated_net_profit} €
-            </h3>
-
-            <p>
-              📈 ROI:
-              {" "}
-              {car.roi}%
-            </p>
-
-            <div style={scoreStyle}>
-              ⭐ SCORE IA: {car.score}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(360px,1fr))", gap: 30 }}>
+        {filteredCars.map((car) => (
+          <div key={car.id} className={`card ${car.score >= 90 ? "premium" : ""}`}>
+            <div style={{ position: "relative" }}>
+              <img src={car.image_url} alt="" style={{ width: "100%", height: 240, objectFit: "cover" }} />
+              {car.is_hot_deal && <div className="hot" style={{ position: "absolute", top: 15, left: 15 }}>🔥 HOT DEAL</div>}
             </div>
 
-            <h2 style={recommendationStyle}>
-              {car.recommendation}
-            </h2>
+            <div style={{ padding: 24 }}>
+              <h2 style={{ fontSize: 34 }}>{car.brand} {car.model}</h2>
+              <div style={{ opacity: 0.85, lineHeight: 1.9 }}>
+                <div>📅 {car.year}</div>
+                <div>🛣 {car.km} km</div>
+                <div>💶 {car.price} €</div>
+              </div>
 
+              <hr style={{ opacity: 0.15 }} />
+
+              <div style={{ lineHeight: 2 }}>
+                <div>🏪 Mercado: {car.estimated_market_price} €</div>
+                <div>🛠 Gastos: {car.estimated_expenses} €</div>
+                <div style={{ fontSize: 34, color: "#4ade80", fontWeight: "bold" }}>💰 {car.estimated_net_profit} €</div>
+                <div>📈 ROI: {car.roi}%</div>
+              </div>
+
+              <div style={{ marginTop: 24, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div className={`badge ${car.score >= 90 ? "score-high" : car.score >= 70 ? "score-medium" : "score-low"}`}>
+                  ⭐ SCORE {car.score}
+                </div>
+                <div style={{ fontWeight: "bold", fontSize: 18 }}>{car.recommendation}</div>
+              </div>
+            </div>
           </div>
-
         ))}
-
       </div>
-
     </div>
-  );
+  )
 }
 
-const pageStyle = {
-  minHeight: "100vh",
-  background: "linear-gradient(135deg,#020617,#1e3a8a)",
-  padding: "40px",
-  color: "white",
-  fontFamily: "Arial"
-};
-
-const loadingStyle = {
-  minHeight: "100vh",
-  display: "flex",
-  justifyContent: "center",
-  alignItems: "center",
-  background: "#020617",
-  color: "white",
-  fontSize: "40px"
-};
-
-const titleStyle = {
-  fontSize: "72px",
-  fontWeight: "bold"
-};
-
-const subtitleStyle = {
-  fontSize: "32px",
-  color: "#cbd5e1",
-  marginBottom: "40px"
-};
-
-const formContainerStyle = {
-  display: "grid",
-  gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))",
-  gap: "15px",
-  marginBottom: "40px"
-};
-
-const inputStyle = {
-  padding: "16px",
-  borderRadius: "14px",
-  border: "none",
-  fontSize: "16px"
-};
-
-const buttonStyle = {
-  background: "#22c55e",
-  color: "white",
-  border: "none",
-  borderRadius: "14px",
-  fontWeight: "bold",
-  fontSize: "18px",
-  cursor: "pointer"
-};
-
-const statsGridStyle = {
-  display: "grid",
-  gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))",
-  gap: "20px",
-  marginBottom: "40px"
-};
-
-const statCardStyle = {
-  background: "rgba(255,255,255,0.1)",
-  padding: "25px",
-  borderRadius: "20px",
-  fontSize: "22px",
-  fontWeight: "bold",
-  backdropFilter: "blur(10px)"
-};
-
-const carsGridStyle = {
-  display: "grid",
-  gridTemplateColumns: "repeat(auto-fit,minmax(420px,1fr))",
-  gap: "30px"
-};
-
-const cardStyle = {
-  background: "rgba(15,23,42,0.95)",
-  padding: "25px",
-  borderRadius: "25px",
-  boxShadow: "0 0 30px rgba(0,0,0,0.4)"
-};
-
-const imageStyle = {
-  width: "100%",
-  height: "260px",
-  objectFit: "cover",
-  borderRadius: "20px",
-  marginBottom: "20px"
-};
-
-const hotDealStyle = {
-  background: "#ef4444",
-  padding: "10px 18px",
-  borderRadius: "12px",
-  display: "inline-block",
-  marginBottom: "20px",
-  fontWeight: "bold"
-};
-
-const profitStyle = {
-  color: "#22c55e"
-};
-
-const scoreStyle = {
-  background: "gold",
-  color: "black",
-  padding: "12px",
-  borderRadius: "12px",
-  display: "inline-block",
-  fontWeight: "bold"
-};
-
-const recommendationStyle = {
-  color: "#38bdf8"
-};
-
-export default App;
+function StatCard({ title, value }) {
+  return (
+    <div className="stat-card">
+      <h3>{title}</h3>
+      <p style={{ fontSize: 36, fontWeight: "bold" }}>{value}</p>
+    </div>
+  )
+}

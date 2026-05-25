@@ -2,13 +2,54 @@ import { useEffect, useState } from "react";
 import { API_URL } from "./config";
 
 function App() {
+
   const [data, setData] = useState(null);
 
-  useEffect(() => {
+  const [form, setForm] = useState({
+    brand: "",
+    model: "",
+    year: "",
+    km: "",
+    price: "",
+    image_url: ""
+  });
+
+  const loadDashboard = () => {
     fetch(`${API_URL}/cars/dashboard`)
       .then((res) => res.json())
       .then((json) => setData(json));
+  };
+
+  useEffect(() => {
+    loadDashboard();
   }, []);
+
+  const addCar = async () => {
+
+    await fetch(`${API_URL}/cars/`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        ...form,
+        year: Number(form.year),
+        km: Number(form.km),
+        price: Number(form.price)
+      })
+    });
+
+    setForm({
+      brand: "",
+      model: "",
+      year: "",
+      km: "",
+      price: "",
+      image_url: ""
+    });
+
+    loadDashboard();
+  };
 
   if (!data) return <div style={loadingStyle}>Cargando IA...</div>;
 
@@ -17,8 +58,59 @@ function App() {
 
   return (
     <div style={pageStyle}>
+
       <h1 style={titleStyle}>🚗 Coches SaaS</h1>
       <p style={subtitleStyle}>IA profesional de compraventa</p>
+
+      <div style={formStyle}>
+
+        <input
+          placeholder="Marca"
+          value={form.brand}
+          onChange={(e) => setForm({...form, brand: e.target.value})}
+          style={inputStyle}
+        />
+
+        <input
+          placeholder="Modelo"
+          value={form.model}
+          onChange={(e) => setForm({...form, model: e.target.value})}
+          style={inputStyle}
+        />
+
+        <input
+          placeholder="Año"
+          value={form.year}
+          onChange={(e) => setForm({...form, year: e.target.value})}
+          style={inputStyle}
+        />
+
+        <input
+          placeholder="KM"
+          value={form.km}
+          onChange={(e) => setForm({...form, km: e.target.value})}
+          style={inputStyle}
+        />
+
+        <input
+          placeholder="Precio"
+          value={form.price}
+          onChange={(e) => setForm({...form, price: e.target.value})}
+          style={inputStyle}
+        />
+
+        <input
+          placeholder="URL imagen"
+          value={form.image_url}
+          onChange={(e) => setForm({...form, image_url: e.target.value})}
+          style={inputStyle}
+        />
+
+        <button onClick={addCar} style={buttonStyle}>
+          🚀 ANALIZAR COCHE
+        </button>
+
+      </div>
 
       <div style={statsStyle}>
         <div style={statStyle}>🚘 Coches: {stats.total_cars}</div>
@@ -88,6 +180,30 @@ const subtitleStyle = {
   fontSize: "28px",
   marginBottom: "40px",
   color: "#cbd5e1"
+};
+
+const formStyle = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))",
+  gap: "15px",
+  marginBottom: "40px"
+};
+
+const inputStyle = {
+  padding: "15px",
+  borderRadius: "12px",
+  border: "none",
+  fontSize: "16px"
+};
+
+const buttonStyle = {
+  background: "#22c55e",
+  color: "white",
+  border: "none",
+  borderRadius: "12px",
+  fontWeight: "bold",
+  fontSize: "18px",
+  cursor: "pointer"
 };
 
 const statsStyle = {

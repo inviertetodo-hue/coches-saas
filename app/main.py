@@ -139,3 +139,43 @@ def delete_car_endpoint(car_id: int, db: Session = Depends(get_db)):
         return {"message": "Coche no encontrado"}
 
     return {"message": "Coche eliminado"}
+
+@app.patch("/cars/{car_id}/favorite")
+def toggle_favorite(car_id: int, db: Session = Depends(get_db)):
+    from app.db.models import Car
+
+    car = db.query(Car).filter(Car.id == car_id).first()
+
+    if not car:
+        return {"message": "Coche no encontrado"}
+
+    car.is_favorite = not bool(car.is_favorite)
+    db.commit()
+    db.refresh(car)
+
+    return {"message": "Favorito actualizado", "is_favorite": car.is_favorite}
+
+
+@app.patch("/cars/{car_id}/sold")
+def toggle_sold(car_id: int, db: Session = Depends(get_db)):
+    from app.db.models import Car
+
+    car = db.query(Car).filter(Car.id == car_id).first()
+
+    if not car:
+        return {"message": "Coche no encontrado"}
+
+    car.is_sold = not bool(car.is_sold)
+    db.commit()
+    db.refresh(car)
+
+    return {"message": "Estado vendido actualizado", "is_sold": car.is_sold}
+
+@app.delete("/cars")
+def delete_all_cars(db: Session = Depends(get_db)):
+    from app.db.models import Car
+
+    db.query(Car).delete()
+    db.commit()
+
+    return {"message": "Todos los coches eliminados"}

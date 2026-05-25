@@ -1,9 +1,4 @@
-from sqlalchemy import Column
-from sqlalchemy import Integer
-from sqlalchemy import Float
-from sqlalchemy import String
-from sqlalchemy import Boolean
-
+from sqlalchemy import Column, Integer, Float, String, Boolean
 from app.db.database import Base
 
 class Car(Base):
@@ -13,24 +8,19 @@ class Car(Base):
 
     brand = Column(String)
     model = Column(String)
-
     year = Column(Integer)
     km = Column(Integer)
-
     price = Column(Float)
-
     image_url = Column(String)
 
     estimated_market_price = Column(Float)
     estimated_expenses = Column(Float)
     estimated_net_profit = Column(Float)
-
     roi = Column(Float)
-
     score = Column(Float)
-
     recommendation = Column(String)
 
-    is_hot_deal = Column(Boolean)
-
-    is_premium_brand = Column(Boolean)
+    is_hot_deal = Column(Boolean, default=False)
+    is_premium_brand = Column(Boolean, default=False)
+    is_favorite = Column(Boolean, default=False)
+    is_sold = Column(Boolean, default=False)
